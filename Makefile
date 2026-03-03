@@ -1,3 +1,25 @@
+# GO build commands
+GO_CMD                    = go
+BUILD_CMD                 = $(GO_CMD) build
+LINUX_GO_BUILD_CMD        = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(BUILD_CMD)
+
+# Paths and filenames
+BIN_DIR                   = ./bin
+LOCAL_BINARY_PATH         = $(BIN_DIR)/local_server
+DOCKER_SERVER_BIN_PATH    = $(BIN_DIR)/dev_server
+
+# Entry points
+SERVER_ENTRYPOINT         = main.go
+MIGRATE_ENTRYPOINT        = cmd/migrate/main.go
+
+# Containerization
+CONTAINER_CMD 			  = docker
+COMPOSE_CMD 			  = $(CONTAINER_CMD) compose
+CONTAINER_FILE            = Dockerfile
+COMPOSE_FILE              = docker-compose.dev.yml
+CONTAINER_IMAGE_NAME      = vaxen-api
+CONTAINER_IMAGE_TAG       = latest
+
 .PHONY: help build run test clean migrate swagger install dev
 
 help: ## Display this help message
@@ -10,10 +32,10 @@ install: ## Install dependencies
 	go install github.com/swaggo/swag/cmd/swag@latest
 
 build: ## Build the application
-	go build -o bin/api main.go
+	$(BUILD_CMD) -o $(LOCAL_BINARY_PATH) $(SERVER_ENTRYPOINT)
 
-run: ## Run the application
-	go run main.go
+run: build ## Build and run the application
+	$(LOCAL_BINARY_PATH)
 
 dev: ## Run with auto-reload (requires air)
 	air
@@ -26,27 +48,34 @@ test-coverage: ## Run tests with coverage
 	go tool cover -html=coverage.out
 
 clean: ## Clean build artifacts
-	rm -rf bin/
+	rm -rf $(BIN_DIR)
 	rm -f coverage.out
 
 swagger: ## Generate Swagger documentation
-	swag init -g main.go --output docs
+	swag init -g $(SERVER_ENTRYPOINT) --output docs
 
 migrate: ## Run database migrations
 	@echo "Running database migrations..."
-	go run cmd/migrate/main.go
+	go run $(MIGRATE_ENTRYPOINT)
+
+dockerbinary: $(DOCKER_SERVER_BIN_PATH) ## Build the Go binary for Docker
+
+$(DOCKER_SERVER_BIN_PATH): $(wildcard *.go) go.mod go.sum
+	@echo "🔨 Building Go binary for Alpine Linux..."
+	@mkdir -p $(BIN_DIR)
+	$(LINUX_GO_BUILD_CMD) -o $(DOCKER_SERVER_BIN_PATH) $(SERVER_ENTRYPOINT)
 
 docker-build: ## Build Docker image
-	docker build -t vaxen-api .
+	$(CONTAINER_CMD) build -t $(CONTAINER_IMAGE_NAME):$(CONTAINER_IMAGE_TAG) -f $(CONTAINER_FILE) .
 
 docker-run: ## Run Docker container
-	docker run -p 8080:8080 --env-file .env vaxen-api
+	$(CONTAINER_CMD) run -p 8080:8080 --env-file .env $(CONTAINER_IMAGE_NAME):$(CONTAINER_IMAGE_TAG)
 
-docker-compose-up: ## Start services with docker-compose
-	docker-compose up -d
+docker-compose-up: dockerbinary ## Start services with docker-compose
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
 
 docker-compose-down: ## Stop services with docker-compose
-	docker-compose down
+	$(COMPOSE_CMD) -f $(COMPOSE_FILE) down
 
 lint: ## Run linter
 	golangci-lint run
