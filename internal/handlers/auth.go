@@ -13,15 +13,22 @@ import (
 type LoginRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 	Password string `json:"password" binding:"required,min=8"`
+	MFACode  string `json:"mfaCode,omitempty"`
 }
 
 // RegisterRequest represents the registration request body
 type RegisterRequest struct {
-	Email            string `json:"email" binding:"required,email"`
-	Password         string `json:"password" binding:"required,min=8"`
-	OrganizationName string `json:"organizationName" binding:"required"`
-	FirstName        string `json:"firstName" binding:"required"`
-	LastName         string `json:"lastName" binding:"required"`
+	Name         string   `json:"name" binding:"required"`
+	Company      string   `json:"company" binding:"required"`
+	Email        string   `json:"email" binding:"required,email"`
+	Role         string   `json:"role" binding:"required"`
+	Country      string   `json:"country" binding:"required"`
+	Markets      []string `json:"markets" binding:"required"`
+	AnnualVolume string   `json:"annualVolume" binding:"required"`
+	UseCase      string   `json:"useCase" binding:"required"`
+	Website      string   `json:"website" binding:"required"`
+	Notes        string   `json:"notes"`
+	Honeypot     string   `json:"honeypot"`
 }
 
 // Login godoc
