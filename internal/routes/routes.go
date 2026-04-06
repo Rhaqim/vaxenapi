@@ -30,6 +30,7 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			public.POST("/auth/login", handlers.Login(cfg, svc))
 			public.POST("/auth/register", handlers.Register(cfg, svc))
 			public.POST("/auth/refresh", handlers.RefreshToken(cfg))
+			public.POST("/auth/logout", handlers.Logout(cfg))
 		}
 
 		// Protected routes (authentication required)

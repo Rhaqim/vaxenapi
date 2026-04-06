@@ -21,8 +21,8 @@ import (
 	"vaxen/api/internal/testutil"
 	"vaxen/api/internal/utils"
 
-	"github.com/shopspring/decimal"
 	"github.com/gin-gonic/gin"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -96,6 +96,15 @@ func parseResponse(t *testing.T, w *httptest.ResponseRecorder) map[string]any {
 	return resp
 }
 
+func getCookie(w *httptest.ResponseRecorder, name string) string {
+	for _, cookie := range w.Result().Cookies() {
+		if cookie.Name == name {
+			return cookie.Value
+		}
+	}
+	return ""
+}
+
 // --- Auth Handler Tests ---
 
 func TestHandler_Register(t *testing.T) {
@@ -125,8 +134,12 @@ func TestHandler_Register(t *testing.T) {
 
 	resp := parseResponse(t, w)
 	data := resp["data"].(map[string]any)
-	assert.NotEmpty(t, data["token"])
+	assert.NotEmpty(t, data["csrfToken"], "should return CSRF token in body")
 	assert.True(t, data["requiresMfa"].(bool))
+
+	// Token should be in httpOnly cookie, NOT in response body
+	assert.Nil(t, data["token"], "token must not be in response body")
+	assert.NotEmpty(t, getCookie(w, utils.AccessTokenCookie), "access token should be in httpOnly cookie")
 }
 
 func TestHandler_Register_Honeypot(t *testing.T) {
@@ -178,7 +191,9 @@ func TestHandler_Login(t *testing.T) {
 
 	resp := parseResponse(t, w)
 	data := resp["data"].(map[string]any)
-	assert.NotEmpty(t, data["token"])
+	assert.NotEmpty(t, data["csrfToken"], "should return CSRF token")
+	assert.Nil(t, data["token"], "token must not be in response body")
+	assert.NotEmpty(t, getCookie(w, utils.AccessTokenCookie), "access token should be in httpOnly cookie")
 }
 
 func TestHandler_Login_InvalidCredentials(t *testing.T) {

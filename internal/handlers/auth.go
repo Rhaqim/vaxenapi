@@ -10,9 +10,32 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// setAuthResponse sets the httpOnly cookie and returns user info.
+// The token is never exposed in the response body.
+func setAuthResponse(c *gin.Context, cfg *config.Config, result *services.AuthResult) {
+	csrfToken, _ := utils.GenerateCSRFToken()
+	maxAge := int(cfg.JWTExpiration.Seconds())
+
+	utils.SetAuthCookies(c, result.Token, csrfToken, cfg.SecureCookies, maxAge)
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"csrfToken": csrfToken,
+		"user": gin.H{
+			"id":             result.User.ID,
+			"email":          result.User.Email,
+			"firstName":      result.User.FirstName,
+			"lastName":       result.User.LastName,
+			"organizationId": result.User.OrganizationID,
+			"role":           result.User.Role,
+			"isDirector":     result.User.IsDirector,
+			"mfaEnabled":     result.User.MFAEnabled,
+		},
+	})
+}
+
 // Login godoc
 // @Summary User login
-// @Description Authenticate user and return JWT token. If MFA is enabled, provide mfaCode.
+// @Description Authenticate user. Token is set as httpOnly cookie, CSRF token returned in body.
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -31,7 +54,7 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 
 		result, err := svc.Auth.Login(req)
 		if err != nil {
-			utils.ErrorResponse(c, http.StatusUnauthorized, err.Error())
+			utils.ErrorResponse(c, http.StatusUnauthorized, "invalid credentials")
 			return
 		}
 
@@ -42,9 +65,9 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 					utils.ErrorResponse(c, http.StatusInternalServerError, "failed to send MFA challenge")
 					return
 				}
+				// Return challenge info without leaking the userId
 				utils.SuccessResponse(c, http.StatusOK, gin.H{
 					"requiresMfa":  true,
-					"userId":       result.User.ID,
 					"challengeId":  challenge.ChallengeID,
 					"expiresInSec": challenge.ExpiresInS,
 				})
@@ -58,30 +81,18 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 
 			result, err = svc.Auth.CompleteLogin(result.User.ID)
 			if err != nil {
-				utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+				utils.ErrorResponse(c, http.StatusInternalServerError, "authentication failed")
 				return
 			}
 		}
 
-		utils.SuccessResponse(c, http.StatusOK, gin.H{
-			"token": result.Token,
-			"user": gin.H{
-				"id":             result.User.ID,
-				"email":          result.User.Email,
-				"firstName":      result.User.FirstName,
-				"lastName":       result.User.LastName,
-				"organizationId": result.User.OrganizationID,
-				"role":           result.User.Role,
-				"isDirector":     result.User.IsDirector,
-				"mfaEnabled":     result.User.MFAEnabled,
-			},
-		})
+		setAuthResponse(c, cfg, result)
 	}
 }
 
 // Register godoc
 // @Summary Business registration
-// @Description Register a new business organization and its first director
+// @Description Register a new business. Token set as httpOnly cookie.
 // @Tags auth
 // @Accept json
 // @Produce json
@@ -110,8 +121,12 @@ func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 
 		go svc.Wallet.CreateDefaultWallets(c.Request.Context(), result.User.OrganizationID)
 
+		csrfToken, _ := utils.GenerateCSRFToken()
+		maxAge := int(cfg.JWTExpiration.Seconds())
+		utils.SetAuthCookies(c, result.Token, csrfToken, cfg.SecureCookies, maxAge)
+
 		utils.SuccessResponse(c, http.StatusCreated, gin.H{
-			"token":       result.Token,
+			"csrfToken":   csrfToken,
 			"requiresMfa": result.RequiresMFA,
 			"user": gin.H{
 				"id":             result.User.ID,
@@ -125,20 +140,37 @@ func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 	}
 }
 
-// RefreshToken godoc
-// @Summary Refresh JWT token
-// @Description Get a new JWT token using a refresh token
+// Logout godoc
+// @Summary User logout
+// @Description Clear auth cookies
 // @Tags auth
-// @Accept json
+// @Produce json
+// @Success 200 {object} map[string]any
+// @Router /api/v1/auth/logout [post]
+func Logout(cfg *config.Config) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		utils.ClearAuthCookies(c, cfg.SecureCookies)
+		utils.SuccessResponse(c, http.StatusOK, gin.H{
+			"message": "Logged out",
+		})
+	}
+}
+
+// RefreshToken godoc
+// @Summary Refresh access token
+// @Description Get a new access token using the refresh cookie
+// @Tags auth
 // @Produce json
 // @Success 200 {object} map[string]any
 // @Failure 401 {object} map[string]any
 // @Router /api/v1/auth/refresh [post]
 func RefreshToken(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TODO: Implement refresh token logic with token rotation
-		utils.SuccessResponse(c, http.StatusOK, gin.H{
-			"message": "Token refreshed",
-		})
+		// TODO: Implement refresh token logic:
+		// 1. Read refresh token from httpOnly cookie
+		// 2. Validate it against DB (check not revoked)
+		// 3. Issue new access token + rotate refresh token
+		// 4. Set new cookies
+		utils.ErrorResponse(c, http.StatusNotImplemented, "refresh token not yet implemented")
 	}
 }

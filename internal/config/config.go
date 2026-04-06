@@ -16,9 +16,11 @@ type Config struct {
 	// Database
 	DatabaseURL string
 
-	// JWT
-	JWTSecret     string
-	JWTExpiration time.Duration
+	// JWT / Auth
+	JWTSecret              string
+	JWTExpiration          time.Duration // Access token lifetime (short — e.g. 15m)
+	RefreshTokenExpiration time.Duration // Refresh token lifetime (e.g. 7d)
+	SecureCookies          bool          // true in production (requires HTTPS)
 
 	// CORS
 	FrontendURL string
@@ -38,45 +40,47 @@ type Config struct {
 // ProviderConfig holds configuration for all third-party providers.
 type ProviderConfig struct {
 	// KYC/KYB
-	KYCProvider       string // "sumsub", "onfido"
-	SumSubAPIKey      string
-	SumSubAPISecret   string
-	SumSubBaseURL     string
+	KYCProvider     string // "sumsub", "onfido"
+	SumSubAPIKey    string
+	SumSubAPISecret string
+	SumSubBaseURL   string
 
 	// MFA
-	MFAProvider       string // "twilio", "totp"
-	TwilioAccountSID  string
-	TwilioAuthToken   string
-	TwilioServiceSID  string
+	MFAProvider      string // "twilio", "totp"
+	TwilioAccountSID string
+	TwilioAuthToken  string
+	TwilioServiceSID string
 
 	// Wallet / Key Management
-	WalletProvider    string // "aws_kms", "fireblocks"
-	AWSRegion         string
-	AWSKMSKeyPolicy   string
+	WalletProvider  string // "aws_kms", "fireblocks"
+	AWSRegion       string
+	AWSKMSKeyPolicy string
 
 	// Exchange
-	ExchangeProvider  string // "internal", "binance", "kraken"
+	ExchangeProvider string // "internal", "binance", "kraken"
 
 	// Payment
-	PaymentProvider   string // "circle", "wise", "stripe"
-	CircleAPIKey      string
-	CircleBaseURL     string
+	PaymentProvider string // "circle", "wise", "stripe"
+	CircleAPIKey    string
+	CircleBaseURL   string
 }
 
 // Load returns the application configuration loaded from environment variables
 func Load() *Config {
 
 	return &Config{
-		Port:          getEnv("PORT", "8080").String(),
-		Environment:   getEnv("ENVIRONMENT", "development").String(),
-		DatabaseURL:   getEnv("DATABASE_URL", "").String(),
-		JWTSecret:     getEnv("JWT_SECRET", "change-this-secret").String(),
-		JWTExpiration: getEnv("JWT_EXPIRATION", "24h").AsDuration(),
-		FrontendURL:   getEnv("FRONTEND_URL", "http://localhost:3000").String(),
-		RedisHost:     getEnv("REDIS_HOST", "localhost").String(),
-		RedisPort:     getEnv("REDIS_PORT", "6379").String(),
-		RedisPassword: getEnv("REDIS_PASSWORD", "").String(),
-		LogLevel:      getEnv("LOG_LEVEL", "info").String(),
+		Port:                   getEnv("PORT", "8080").String(),
+		Environment:            getEnv("ENVIRONMENT", "development").String(),
+		DatabaseURL:            getEnv("DATABASE_URL", "").String(),
+		JWTSecret:              getEnv("JWT_SECRET", "change-this-secret").String(),
+		JWTExpiration:          getEnv("JWT_EXPIRATION", "15m").AsDuration(),
+		RefreshTokenExpiration: getEnv("REFRESH_TOKEN_EXPIRATION", "168h").AsDuration(), // 7 days
+		SecureCookies:          getEnv("ENVIRONMENT", "development").String() == "production",
+		FrontendURL:            getEnv("FRONTEND_URL", "http://localhost:3000").String(),
+		RedisHost:              getEnv("REDIS_HOST", "localhost").String(),
+		RedisPort:              getEnv("REDIS_PORT", "6379").String(),
+		RedisPassword:          getEnv("REDIS_PASSWORD", "").String(),
+		LogLevel:               getEnv("LOG_LEVEL", "info").String(),
 
 		Providers: ProviderConfig{
 			// KYC

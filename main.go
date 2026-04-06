@@ -77,7 +77,7 @@ func main() {
 	router := gin.Default()
 
 	// Apply global middleware
-	router.Use(middleware.CORS())
+	router.Use(middleware.CORS(cfg))
 	router.Use(middleware.Security())
 	router.Use(middleware.Logger())
 	router.Use(middleware.ErrorHandler())
