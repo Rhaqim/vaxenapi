@@ -30,6 +30,37 @@ type Config struct {
 
 	// Logging
 	LogLevel string
+
+	// Provider configuration
+	Providers ProviderConfig
+}
+
+// ProviderConfig holds configuration for all third-party providers.
+type ProviderConfig struct {
+	// KYC/KYB
+	KYCProvider       string // "sumsub", "onfido"
+	SumSubAPIKey      string
+	SumSubAPISecret   string
+	SumSubBaseURL     string
+
+	// MFA
+	MFAProvider       string // "twilio", "totp"
+	TwilioAccountSID  string
+	TwilioAuthToken   string
+	TwilioServiceSID  string
+
+	// Wallet / Key Management
+	WalletProvider    string // "aws_kms", "fireblocks"
+	AWSRegion         string
+	AWSKMSKeyPolicy   string
+
+	// Exchange
+	ExchangeProvider  string // "internal", "binance", "kraken"
+
+	// Payment
+	PaymentProvider   string // "circle", "wise", "stripe"
+	CircleAPIKey      string
+	CircleBaseURL     string
 }
 
 // Load returns the application configuration loaded from environment variables
@@ -46,6 +77,33 @@ func Load() *Config {
 		RedisPort:     getEnv("REDIS_PORT", "6379").String(),
 		RedisPassword: getEnv("REDIS_PASSWORD", "").String(),
 		LogLevel:      getEnv("LOG_LEVEL", "info").String(),
+
+		Providers: ProviderConfig{
+			// KYC
+			KYCProvider:     getEnv("KYC_PROVIDER", "sumsub").String(),
+			SumSubAPIKey:    getEnv("SUMSUB_API_KEY", "").String(),
+			SumSubAPISecret: getEnv("SUMSUB_API_SECRET", "").String(),
+			SumSubBaseURL:   getEnv("SUMSUB_BASE_URL", "https://api.sumsub.com").String(),
+
+			// MFA
+			MFAProvider:      getEnv("MFA_PROVIDER", "twilio").String(),
+			TwilioAccountSID: getEnv("TWILIO_ACCOUNT_SID", "").String(),
+			TwilioAuthToken:  getEnv("TWILIO_AUTH_TOKEN", "").String(),
+			TwilioServiceSID: getEnv("TWILIO_SERVICE_SID", "").String(),
+
+			// Wallet
+			WalletProvider:  getEnv("WALLET_PROVIDER", "aws_kms").String(),
+			AWSRegion:       getEnv("AWS_REGION", "us-east-1").String(),
+			AWSKMSKeyPolicy: getEnv("AWS_KMS_KEY_POLICY", "").String(),
+
+			// Exchange
+			ExchangeProvider: getEnv("EXCHANGE_PROVIDER", "internal").String(),
+
+			// Payment
+			PaymentProvider: getEnv("PAYMENT_PROVIDER", "circle").String(),
+			CircleAPIKey:    getEnv("CIRCLE_API_KEY", "").String(),
+			CircleBaseURL:   getEnv("CIRCLE_BASE_URL", "https://api.circle.com").String(),
+		},
 	}
 }
 

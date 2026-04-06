@@ -10,25 +10,23 @@ import (
 
 // GetWallets godoc
 // @Summary Get all wallets
-// @Description Retrieve all wallets for the organization
+// @Description Retrieve all fiat wallets for the organization
 // @Tags wallets
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /api/v1/wallets [get]
-func GetWallets(c *gin.Context) {
-	organizationID := c.GetString("organizationId")
+func (h *Handler) GetWallets(c *gin.Context) {
+	orgID := c.GetString("organizationId")
 
-	// TODO: Fetch from database
-	utils.SuccessResponse(c, http.StatusOK, []gin.H{
-		{
-			"id":             "wallet-1",
-			"organizationId": organizationID,
-			"currency":       "USD",
-			"balance":        "1000.00",
-		},
-	})
+	wallets, err := h.Services.Wallet.GetWallets(orgID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, wallets)
 }
 
 // GetWallet godoc
@@ -41,37 +39,53 @@ func GetWallets(c *gin.Context) {
 // @Param id path string true "Wallet ID"
 // @Success 200 {object} map[string]any
 // @Router /api/v1/wallets/{id} [get]
-func GetWallet(c *gin.Context) {
+func (h *Handler) GetWallet(c *gin.Context) {
+	orgID := c.GetString("organizationId")
 	id := c.Param("id")
 
-	// TODO: Fetch from database
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"id":       id,
-		"currency": "USD",
-		"balance":  "1000.00",
-	})
+	wallet, err := h.Services.Wallet.GetWallet(orgID, id)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, wallet)
 }
 
 // CreateWallet godoc
 // @Summary Create a new wallet
-// @Description Create a new wallet for the organization
+// @Description Create a new fiat or Web3 wallet for the organization
 // @Tags wallets
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /api/v1/wallets [post]
-func CreateWallet(c *gin.Context) {
-	var req map[string]any
-
+func (h *Handler) CreateWallet(c *gin.Context) {
+	orgID := c.GetString("organizationId")
+	var req struct {
+		Type     string `json:"type" binding:"required"` // "fiat" or "crypto"
+		Currency string `json:"currency"`                // For fiat wallets
+		Network  string `json:"network"`                 // For crypto wallets
+		Label    string `json:"label"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// TODO: Create in database
+	if req.Type == "crypto" {
+		w, err := h.Services.Wallet.CreateWeb3Wallet(c.Request.Context(), orgID, req.Network, req.Label)
+		if err != nil {
+			utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+			return
+		}
+		utils.SuccessResponse(c, http.StatusCreated, w)
+		return
+	}
+
+	// Fiat wallet creation handled via DB directly for now
 	utils.SuccessResponse(c, http.StatusCreated, gin.H{
-		"id":      "new-wallet-id",
 		"message": "Wallet created",
 	})
 }
@@ -86,15 +100,44 @@ func CreateWallet(c *gin.Context) {
 // @Param id path string true "Wallet ID"
 // @Success 200 {object} map[string]any
 // @Router /api/v1/wallets/{id}/balance [get]
-func GetWalletBalance(c *gin.Context) {
+func (h *Handler) GetWalletBalance(c *gin.Context) {
+	orgID := c.GetString("organizationId")
 	id := c.Param("id")
 
-	// TODO: Calculate from database
+	wallet, err := h.Services.Wallet.GetWallet(orgID, id)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	}
+
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"walletId": id,
-		"balance":  "1000.00",
-		"currency": "USD",
+		"walletId":         wallet.ID,
+		"balance":          wallet.Balance,
+		"availableBalance": wallet.AvailableBalance,
+		"pendingBalance":   wallet.PendingBalance,
+		"currency":         wallet.Currency,
 	})
+}
+
+// GetWeb3Wallets godoc
+// @Summary Get Web3 wallets
+// @Description Retrieve all blockchain wallets for the organization
+// @Tags wallets
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Router /api/v1/wallets/web3 [get]
+func (h *Handler) GetWeb3Wallets(c *gin.Context) {
+	orgID := c.GetString("organizationId")
+
+	wallets, err := h.Services.Wallet.GetWeb3Wallets(orgID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, wallets)
 }
 
 // GetAccounts godoc

@@ -15,7 +15,9 @@ const (
 	KybStatusRequiresInfo KybStatus = "requires_info"
 )
 
-// Organization represents a business organization
+// Organization represents a business entity on the platform.
+// Only organizations can hold accounts, send/receive money, and swap currencies.
+// Directors (users with IsDirector=true) initiate actions on behalf of the org.
 type Organization struct {
 	ID                 string              `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Name               string              `gorm:"not null" json:"name"`
@@ -25,6 +27,7 @@ type Organization struct {
 	Country            string              `gorm:"type:char(2);not null" json:"country"`
 	Address            datatypes.JSON      `gorm:"type:jsonb" json:"address"`
 	KYBStatus          KybStatus           `gorm:"type:text;default:'pending'" json:"kybStatus"`
+	KYBReferenceID     string              `gorm:"type:text" json:"-"` // Provider's reference
 	KYBSubmittedAt     *time.Time          `json:"kybSubmittedAt"`
 	KYBApprovedAt      *time.Time          `json:"kybApprovedAt"`
 	Settings           datatypes.JSON      `gorm:"type:jsonb;default:'{}'" json:"settings"`

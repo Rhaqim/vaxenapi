@@ -4,6 +4,7 @@ import (
 	"vaxen/api/internal/config"
 	"vaxen/api/internal/handlers"
 	"vaxen/api/internal/middleware"
+	"vaxen/api/internal/services"
 
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
@@ -11,7 +12,9 @@ import (
 )
 
 // SetupRoutes configures all application routes
-func SetupRoutes(router *gin.Engine, cfg *config.Config) {
+func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container) {
+	h := handlers.NewHandler(svc)
+
 	// Health check endpoint
 	router.GET("/health", handlers.HealthCheck)
 
@@ -24,8 +27,8 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 		// Public routes (no authentication required)
 		public := v1.Group("/")
 		{
-			public.POST("/auth/login", handlers.Login(cfg))
-			public.POST("/auth/register", handlers.Register(cfg))
+			public.POST("/auth/login", handlers.Login(cfg, svc))
+			public.POST("/auth/register", handlers.Register(cfg, svc))
 			public.POST("/auth/refresh", handlers.RefreshToken(cfg))
 		}
 
@@ -33,6 +36,14 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
+			// MFA (must be accessible before MFA is set up)
+			mfa := protected.Group("/mfa")
+			{
+				mfa.POST("/enroll", h.EnrollMFA)
+				mfa.POST("/confirm", h.ConfirmMFA)
+				mfa.POST("/disable", h.DisableMFA)
+			}
+
 			// Organizations
 			organizations := protected.Group("/organizations")
 			{
@@ -45,17 +56,18 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 			// KYB (Know Your Business)
 			kyb := protected.Group("/kyb")
 			{
-				kyb.POST("/submit", handlers.SubmitKYB)
-				kyb.GET("/status", handlers.GetKYBStatus)
+				kyb.POST("/submit", h.SubmitKYB)
+				kyb.GET("/status", h.GetKYBStatus)
 			}
 
 			// Wallets
 			wallets := protected.Group("/wallets")
 			{
-				wallets.GET("/", handlers.GetWallets)
-				wallets.GET("/:id", handlers.GetWallet)
-				wallets.POST("/", handlers.CreateWallet)
-				wallets.GET("/:id/balance", handlers.GetWalletBalance)
+				wallets.GET("/", h.GetWallets)
+				wallets.GET("/web3", h.GetWeb3Wallets)
+				wallets.GET("/:id", h.GetWallet)
+				wallets.POST("/", h.CreateWallet)
+				wallets.GET("/:id/balance", h.GetWalletBalance)
 			}
 
 			// Accounts
@@ -69,15 +81,17 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 			// Quotes
 			quotes := protected.Group("/quotes")
 			{
-				quotes.POST("/", handlers.CreateQuote)
+				quotes.POST("/", h.CreateQuote)
 				quotes.GET("/:id", handlers.GetQuote)
 			}
 
-			// Conversions
+			// Conversions / Swaps
 			conversions := protected.Group("/conversions")
 			{
-				conversions.POST("/", handlers.CreateConversion)
+				conversions.POST("/", h.CreateConversion)
 				conversions.GET("/", handlers.GetConversions)
+				conversions.GET("/pairs", h.GetSupportedPairs)
+				conversions.GET("/rate", h.GetRate)
 				conversions.GET("/:id", handlers.GetConversion)
 			}
 
@@ -101,12 +115,13 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 				beneficiaries.DELETE("/:id", handlers.DeleteBeneficiary)
 			}
 
-			// Payouts
+			// Payouts / Send Money
 			payouts := protected.Group("/payouts")
 			{
-				payouts.GET("/", handlers.GetPayouts)
-				payouts.GET("/:id", handlers.GetPayout)
-				payouts.POST("/", handlers.CreatePayout)
+				payouts.GET("/", h.GetPayouts)
+				payouts.GET("/fees", h.GetPayoutFees)
+				payouts.GET("/:id", h.GetPayout)
+				payouts.POST("/", h.CreatePayout)
 			}
 
 			// Crypto
@@ -115,6 +130,15 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 				crypto.GET("/addresses", handlers.GetCryptoAddresses)
 				crypto.POST("/addresses", handlers.CreateCryptoAddress)
 				crypto.POST("/withdraw", handlers.CryptoWithdraw)
+			}
+
+			// Approvals (multi-director workflow)
+			approvals := protected.Group("/approvals")
+			{
+				approvals.GET("/pending", h.GetPendingApprovals)
+				approvals.GET("/:id", h.GetApprovalRequest)
+				approvals.POST("/:id/vote", h.VoteOnApproval)
+				approvals.PUT("/policy", h.UpdateApprovalPolicy)
 			}
 
 			// Statements
@@ -152,18 +176,33 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config) {
 			webhooks.POST("/provider/:provider", handlers.ProcessWebhook)
 		}
 
-		// Admin routes (require admin role)
+		// Platform Admin routes (require admin role)
 		admin := v1.Group("/admin")
 		admin.Use(middleware.AuthMiddleware(cfg))
 		admin.Use(middleware.AdminMiddleware())
 		{
-			admin.GET("/users", handlers.GetAllUsers)
+			// User management
+			admin.GET("/users", h.GetAllUsers)
 			admin.GET("/users/:id", handlers.GetUser)
 			admin.PUT("/users/:id", handlers.UpdateUser)
 			admin.DELETE("/users/:id", handlers.DeleteUser)
-			admin.GET("/organizations", handlers.GetAllOrganizations)
-			admin.POST("/organizations/:id/approve", handlers.ApproveOrganization)
-			admin.POST("/organizations/:id/reject", handlers.RejectOrganization)
+
+			// Organization management
+			admin.GET("/organizations", h.GetAllOrganizations)
+			admin.POST("/organizations/:id/approve", h.ApproveOrganization)
+			admin.POST("/organizations/:id/reject", h.RejectOrganization)
+
+			// Platform settings
+			admin.GET("/settings", h.GetPlatformSettings)
+			admin.PUT("/settings", h.UpdatePlatformSetting)
+
+			// Feature flags
+			admin.GET("/features", h.GetFeatureFlags)
+			admin.PUT("/features", h.SetFeatureFlag)
+
+			// Exchange rates
+			admin.GET("/exchange-rates", h.GetExchangeRates)
+			admin.PUT("/exchange-rates", h.UpsertExchangeRate)
 		}
 	}
 }

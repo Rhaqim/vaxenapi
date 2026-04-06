@@ -6,7 +6,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// User represents a user in the system
+// User represents a user in the system.
+// In Vaxen, users always belong to an organization. Directors (owners/managers)
+// can initiate and approve transactions; other roles have limited permissions.
 type User struct {
 	ID             string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
 	Email          string         `gorm:"unique;not null" json:"email"`
@@ -15,8 +17,10 @@ type User struct {
 	PasswordHash   string         `gorm:"not null" json:"-"`
 	Role           UserRole       `gorm:"type:text;default:'viewer'" json:"role"`
 	OrganizationID string         `gorm:"type:uuid;not null" json:"organizationId"`
+	IsDirector     bool           `gorm:"default:false" json:"isDirector"`
 	MFAEnabled     bool           `gorm:"default:false" json:"mfaEnabled"`
-	MFASecret      *string        `json:"mfaSecret"`
+	MFASecret      *string        `json:"-"`
+	MFAProvider    string         `gorm:"type:text" json:"-"`
 	LastLoginAt    *time.Time     `json:"lastLoginAt"`
 	IsActive       bool           `gorm:"default:true" json:"isActive"`
 	CreatedAt      time.Time      `json:"createdAt"`

@@ -7,7 +7,9 @@ import (
 	"vaxen/api/internal/config"
 	"vaxen/api/internal/database"
 	"vaxen/api/internal/middleware"
+	"vaxen/api/internal/providers"
 	"vaxen/api/internal/routes"
+	"vaxen/api/internal/services"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -45,17 +47,26 @@ func main() {
 	// Connect to database
 	if cfg.DatabaseURL != "" {
 		if err := database.Connect(cfg); err != nil {
-			log.Printf("⚠️  Database connection failed: %v", err)
+			log.Printf("Database connection failed: %v", err)
 			log.Println("Continuing without database...")
 		} else {
 			// Run migrations
 			if err := database.Migrate(); err != nil {
-				log.Printf("⚠️  Migration failed: %v", err)
+				log.Printf("Migration failed: %v", err)
 			} else {
-				log.Println("✅ Database migrations completed")
+				log.Println("Database migrations completed")
 			}
 		}
 	}
+
+	// Bootstrap providers from config (swap by changing env vars)
+	reg := providers.Bootstrap(cfg)
+	log.Printf("Providers: KYC=%s MFA=%s Wallet=%s Exchange=%s Payment=%s",
+		reg.KYC().Name(), reg.MFA().Name(), reg.Wallet().Name(),
+		reg.Exchange().Name(), reg.Payment().Name())
+
+	// Initialize service layer
+	svc := services.NewContainer(database.DB, cfg, reg)
 
 	// Set Gin mode
 	if cfg.Environment == "production" {
@@ -72,7 +83,7 @@ func main() {
 	router.Use(middleware.ErrorHandler())
 
 	// Setup routes
-	routes.SetupRoutes(router, cfg)
+	routes.SetupRoutes(router, cfg, svc)
 
 	// Start server
 	port := cfg.Port
@@ -80,9 +91,9 @@ func main() {
 		port = "8080"
 	}
 
-	log.Printf("🚀 Vaxen API running on http://localhost:%s\n", port)
-	log.Printf("📚 API Documentation: http://localhost:%s/docs/index.html\n", port)
-	log.Printf("🏥 Health Check: http://localhost:%s/health\n", port)
+	log.Printf("Vaxen API running on http://localhost:%s\n", port)
+	log.Printf("API Documentation: http://localhost:%s/docs/index.html\n", port)
+	log.Printf("Health Check: http://localhost:%s/health\n", port)
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to start server: %v", err)

@@ -32,7 +32,10 @@ type ConversionOrder struct {
 	FromAmount     decimal.Decimal  `gorm:"type:decimal(20,8);not null" json:"fromAmount"`
 	ToAmount       decimal.Decimal  `gorm:"type:decimal(20,8);not null" json:"toAmount"`
 	Rate           decimal.Decimal  `gorm:"type:decimal(20,8);not null" json:"rate"`
+	Spread         decimal.Decimal  `gorm:"type:decimal(20,8);default:0" json:"spread"`
 	Fee            decimal.Decimal  `gorm:"type:decimal(20,8);default:0" json:"fee"`
+	ProviderRef    *string          `gorm:"type:text" json:"-"`
+	InitiatedByID  *string          `gorm:"type:uuid" json:"initiatedById"`
 	Status         OrderStatus      `gorm:"type:text;default:'pending'" json:"status"`
 	Type           ConversionType   `gorm:"type:text;default:'market'" json:"type"`
 	LimitPrice     *decimal.Decimal `gorm:"type:decimal(20,8)" json:"limitPrice"`

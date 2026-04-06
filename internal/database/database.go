@@ -54,6 +54,16 @@ func Migrate() error {
 		&models.ScreeningResult{},
 		&models.AuditLog{},
 		&models.WebhookEvent{},
+		// New models
+		&models.ApprovalPolicy{},
+		&models.ApprovalRequest{},
+		&models.ApprovalVote{},
+		&models.PlatformSetting{},
+		&models.FeatureFlag{},
+		&models.ExchangeRate{},
+		&models.MFAEnrollment{},
+		&models.MFAChallenge{},
+		&models.Web3Wallet{},
 	)
 }
 

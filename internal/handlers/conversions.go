@@ -5,6 +5,8 @@ import (
 
 	"vaxen/api/internal/utils"
 
+	"github.com/shopspring/decimal"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -53,50 +55,67 @@ func GetConversion(c *gin.Context) {
 }
 
 // CreateConversion godoc
-// @Summary Create a new conversion
-// @Description Create a new currency conversion
+// @Summary Execute a currency swap
+// @Description Execute a fiat or crypto conversion using the configured exchange provider
 // @Tags conversions
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /api/v1/conversions [post]
-func CreateConversion(c *gin.Context) {
-	var req map[string]any
+func (h *Handler) CreateConversion(c *gin.Context) {
+	orgID := c.GetString("organizationId")
+	var req struct {
+		QuoteID string `json:"quoteId" binding:"required"`
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, gin.H{
-		"id":      "new-conversion-id",
-		"message": "Conversion created",
-	})
+	order, err := h.Services.Exchange.ExecuteSwap(c.Request.Context(), orgID, req.QuoteID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, order)
 }
 
 // CreateQuote godoc
-// @Summary Create a new quote
-// @Description Get a quote for currency conversion
+// @Summary Get a conversion quote
+// @Description Get a locked-in quote for a currency conversion from the exchange provider
 // @Tags quotes
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /api/v1/quotes [post]
-func CreateQuote(c *gin.Context) {
-	var req map[string]any
+func (h *Handler) CreateQuote(c *gin.Context) {
+	var req struct {
+		FromCurrency string `json:"fromCurrency" binding:"required"`
+		ToCurrency   string `json:"toCurrency" binding:"required"`
+		Amount       string `json:"amount" binding:"required"`
+		Side         string `json:"side" binding:"required"` // "buy" or "sell"
+	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	utils.SuccessResponse(c, http.StatusCreated, gin.H{
-		"id":           "quote-123",
-		"fromCurrency": "USD",
-		"toCurrency":   "EUR",
-		"rate":         "0.85",
-		"expiresAt":    "2026-02-20T12:00:00Z",
-	})
+	amount, err := decimal.NewFromString(req.Amount)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, "invalid amount")
+		return
+	}
+
+	quote, err := h.Services.Exchange.GetQuote(c.Request.Context(), req.FromCurrency, req.ToCurrency, amount, req.Side)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusCreated, quote)
 }
 
 // GetQuote godoc
@@ -118,4 +137,51 @@ func GetQuote(c *gin.Context) {
 		"toCurrency":   "EUR",
 		"rate":         "0.85",
 	})
+}
+
+// GetSupportedPairs godoc
+// @Summary List supported currency pairs
+// @Description Get all tradable currency pairs from the exchange provider
+// @Tags conversions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} map[string]any
+// @Router /api/v1/conversions/pairs [get]
+func (h *Handler) GetSupportedPairs(c *gin.Context) {
+	pairs, err := h.Services.Exchange.ListSupportedPairs(c.Request.Context())
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, pairs)
+}
+
+// GetRate godoc
+// @Summary Get exchange rate
+// @Description Get current exchange rate between two currencies
+// @Tags conversions
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param from query string true "Source currency"
+// @Param to query string true "Target currency"
+// @Success 200 {object} map[string]any
+// @Router /api/v1/conversions/rate [get]
+func (h *Handler) GetRate(c *gin.Context) {
+	from := c.Query("from")
+	to := c.Query("to")
+	if from == "" || to == "" {
+		utils.ErrorResponse(c, http.StatusBadRequest, "from and to query params required")
+		return
+	}
+
+	rate, err := h.Services.Exchange.GetRate(c.Request.Context(), from, to)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, rate)
 }

@@ -44,6 +44,8 @@ type Payout struct {
 	Reference      *string         `json:"reference"`
 	Description    *string         `json:"description"`
 	Status         PayoutStatus    `gorm:"type:text;default:'pending'" json:"status"`
+	ProviderRef    *string         `gorm:"type:text" json:"-"`
+	InitiatedByID  *string         `gorm:"type:uuid" json:"initiatedById"`
 	Fee            decimal.Decimal `gorm:"type:decimal(20,8);default:0" json:"fee"`
 	ExecutedAt     *time.Time      `json:"executedAt"`
 	CreatedAt      time.Time       `json:"createdAt"`
