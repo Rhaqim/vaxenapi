@@ -22,19 +22,21 @@ func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
 }
 
 type RegisterInput struct {
-	Email              string
-	Password           string
-	FirstName          string
-	LastName           string
-	CompanyName        string
-	LegalName          string
-	RegistrationNumber string
-	Country            string
+	FirstName          string `json:"firstName" binding:"required"`
+	LastName           string `json:"lastName" binding:"required"`
+	Email              string `json:"email" binding:"required,email"`
+	Password           string `json:"password" binding:"required,min=8"`
+	CompanyName        string `json:"companyName" binding:"required"`
+	LegalName          string `json:"legalName" binding:"required"`
+	RegistrationNumber string `json:"registrationNumber" binding:"required"`
+	Country            string `json:"country" binding:"required"`
+	Honeypot           string `json:"honeypot"`
 }
 
 type LoginInput struct {
-	Email    string
-	Password string
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
+	MFACode  string `json:"mfaCode,omitempty"`
 }
 
 type AuthResult struct {
@@ -46,7 +48,6 @@ type AuthResult struct {
 
 // Register creates a new organization and its first director (owner).
 func (s *AuthService) Register(input RegisterInput) (*AuthResult, error) {
-	// Check if email already exists
 	var existing models.User
 	if err := s.db.Where("email = ?", input.Email).First(&existing).Error; err == nil {
 		return nil, errors.New("email already registered")
@@ -57,7 +58,6 @@ func (s *AuthService) Register(input RegisterInput) (*AuthResult, error) {
 		return nil, errors.New("failed to hash password")
 	}
 
-	// Create org and user in a transaction
 	var org models.Organization
 	var user models.User
 
@@ -87,7 +87,6 @@ func (s *AuthService) Register(input RegisterInput) (*AuthResult, error) {
 			return err
 		}
 
-		// Create default approval policies for the org
 		policies := []models.ApprovalPolicy{
 			{OrganizationID: org.ID, ActionType: models.ApprovalActionPayout, RequiredApprovals: 1},
 			{OrganizationID: org.ID, ActionType: models.ApprovalActionConversion, RequiredApprovals: 1},
@@ -105,7 +104,6 @@ func (s *AuthService) Register(input RegisterInput) (*AuthResult, error) {
 		return nil, err
 	}
 
-	// Directors must set up MFA before they can operate — return token but flag MFA required
 	token, err := utils.GenerateToken(user.ID, org.ID, user.Email, string(user.Role), s.cfg.JWTSecret, s.cfg.JWTExpiration)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
@@ -114,7 +112,7 @@ func (s *AuthService) Register(input RegisterInput) (*AuthResult, error) {
 	return &AuthResult{
 		Token:       token,
 		User:        user,
-		RequiresMFA: true, // Directors must enroll MFA
+		RequiresMFA: true,
 	}, nil
 }
 
@@ -129,7 +127,6 @@ func (s *AuthService) Login(input LoginInput) (*AuthResult, error) {
 		return nil, errors.New("invalid credentials")
 	}
 
-	// If MFA is enabled, don't issue a full token yet — the handler must verify MFA first
 	if user.MFAEnabled {
 		return &AuthResult{
 			User:        user,

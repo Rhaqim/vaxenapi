@@ -24,18 +24,17 @@ func NewPaymentService(db *gorm.DB, reg *providers.Registry, approval *ApprovalS
 }
 
 type SendPaymentInput struct {
-	OrganizationID string
-	InitiatedByID  string
-	BeneficiaryID  string
-	Amount         decimal.Decimal
-	Currency       string
-	Reference      string
-	Description    string
+	OrganizationID string          `json:"-"` // set from context
+	InitiatedByID  string          `json:"-"` // set from context
+	BeneficiaryID  string          `json:"beneficiaryId" binding:"required"`
+	Amount         decimal.Decimal `json:"amount" binding:"required"`
+	Currency       string          `json:"currency" binding:"required"`
+	Reference      string          `json:"reference"`
+	Description    string          `json:"description"`
 }
 
 // InitiatePayment creates a payout record and submits it for approval if required.
 func (s *PaymentService) InitiatePayment(ctx context.Context, input SendPaymentInput) (*models.Payout, error) {
-	// Verify beneficiary belongs to the org
 	var beneficiary models.Beneficiary
 	if err := s.db.Where("id = ? AND organization_id = ?", input.BeneficiaryID, input.OrganizationID).First(&beneficiary).Error; err != nil {
 		return nil, errors.New("beneficiary not found")
@@ -56,7 +55,6 @@ func (s *PaymentService) InitiatePayment(ctx context.Context, input SendPaymentI
 		return nil, err
 	}
 
-	// Check if multi-approval is required
 	required, err := s.approval.GetRequiredApprovals(input.OrganizationID, models.ApprovalActionPayout)
 	if err != nil {
 		return nil, err
@@ -78,7 +76,6 @@ func (s *PaymentService) InitiatePayment(ctx context.Context, input SendPaymentI
 		return &payout, nil
 	}
 
-	// Single approval — execute immediately
 	if err := s.ExecutePayment(ctx, &payout, &beneficiary); err != nil {
 		return nil, err
 	}
@@ -88,9 +85,9 @@ func (s *PaymentService) InitiatePayment(ctx context.Context, input SendPaymentI
 
 // ExecutePayment sends the payment via the configured provider.
 func (s *PaymentService) ExecutePayment(ctx context.Context, payout *models.Payout, beneficiary *models.Beneficiary) error {
-	provider := s.reg.Payment()
-	if provider == nil {
-		return errors.New("payment provider not configured")
+	provider, err := s.reg.RequirePayment()
+	if err != nil {
+		return err
 	}
 
 	ref := ""
@@ -133,10 +130,8 @@ func (s *PaymentService) GetPaymentStatus(ctx context.Context, payoutID string, 
 	}
 
 	if payout.ProviderRef != nil {
-		provider := s.reg.Payment()
-		if provider != nil {
-			status, err := provider.GetPaymentStatus(ctx, *payout.ProviderRef)
-			if err == nil {
+		if provider, err := s.reg.RequirePayment(); err == nil {
+			if status, err := provider.GetPaymentStatus(ctx, *payout.ProviderRef); err == nil {
 				s.db.Model(&payout).Update("status", status.Status)
 				payout.Status = models.PayoutStatus(status.Status)
 			}
@@ -157,11 +152,10 @@ func (s *PaymentService) GetPayouts(orgID string) ([]models.Payout, error) {
 
 // GetFees estimates fees for a payment.
 func (s *PaymentService) GetFees(ctx context.Context, amount decimal.Decimal, currency string, country string, method string) (*payment.FeeResult, error) {
-	provider := s.reg.Payment()
-	if provider == nil {
-		return nil, errors.New("payment provider not configured")
+	provider, err := s.reg.RequirePayment()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.GetFees(ctx, payment.FeeRequest{
 		Amount:   amount,
 		Currency: currency,

@@ -11,14 +11,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type CreatePayoutRequest struct {
-	BeneficiaryID string `json:"beneficiaryId" binding:"required"`
-	Amount        string `json:"amount" binding:"required"`
-	Currency      string `json:"currency" binding:"required"`
-	Reference     string `json:"reference"`
-	Description   string `json:"description"`
-}
-
 // GetPayouts godoc
 // @Summary Get all payouts
 // @Description Retrieve all payouts for the organization
@@ -70,34 +62,20 @@ func (h *Handler) GetPayout(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param request body CreatePayoutRequest true "Payout details"
+// @Param request body services.SendPaymentInput true "Payout details"
 // @Success 201 {object} map[string]any
 // @Router /api/v1/payouts [post]
 func (h *Handler) CreatePayout(c *gin.Context) {
-	orgID := c.GetString("organizationId")
-	userID := c.GetString("userId")
-
-	var req CreatePayoutRequest
+	var req services.SendPaymentInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	amount, err := decimal.NewFromString(req.Amount)
-	if err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, "invalid amount")
-		return
-	}
+	req.OrganizationID = c.GetString("organizationId")
+	req.InitiatedByID = c.GetString("userId")
 
-	payout, err := h.Services.Payment.InitiatePayment(c.Request.Context(), services.SendPaymentInput{
-		OrganizationID: orgID,
-		InitiatedByID:  userID,
-		BeneficiaryID:  req.BeneficiaryID,
-		Amount:         amount,
-		Currency:       req.Currency,
-		Reference:      req.Reference,
-		Description:    req.Description,
-	})
+	payout, err := h.Services.Payment.InitiatePayment(c.Request.Context(), req)
 	if err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return

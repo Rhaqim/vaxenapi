@@ -22,21 +22,21 @@ func NewKYCService(db *gorm.DB, reg *providers.Registry) *KYCService {
 }
 
 type KYBSubmitInput struct {
-	OrganizationID     string
-	LegalName          string
-	RegistrationNumber string
-	TaxID              string
-	Country            string
-	Address            kyc.Address
-	Directors          []kyc.DirectorInfo
-	Documents          []kyc.Document
+	OrganizationID     string             `json:"-"` // set from context
+	LegalName          string             `json:"legalName" binding:"required"`
+	RegistrationNumber string             `json:"registrationNumber" binding:"required"`
+	TaxID              string             `json:"taxId"`
+	Country            string             `json:"country" binding:"required"`
+	Address            kyc.Address        `json:"address" binding:"required"`
+	Directors          []kyc.DirectorInfo `json:"directors" binding:"required"`
+	Documents          []kyc.Document     `json:"documents,omitempty"`
 }
 
 // SubmitKYB sends KYB data to the provider and updates the org record.
 func (s *KYCService) SubmitKYB(ctx context.Context, input KYBSubmitInput) (*kyc.KYBResult, error) {
-	provider := s.reg.KYC()
-	if provider == nil {
-		return nil, errors.New("KYC provider not configured")
+	provider, err := s.reg.RequireKYC()
+	if err != nil {
+		return nil, err
 	}
 
 	var org models.Organization
@@ -74,9 +74,9 @@ func (s *KYCService) SubmitKYB(ctx context.Context, input KYBSubmitInput) (*kyc.
 
 // GetKYBStatus checks the provider for the latest KYB status and updates our record.
 func (s *KYCService) GetKYBStatus(ctx context.Context, organizationID string) (*kyc.KYBResult, error) {
-	provider := s.reg.KYC()
-	if provider == nil {
-		return nil, errors.New("KYC provider not configured")
+	provider, err := s.reg.RequireKYC()
+	if err != nil {
+		return nil, err
 	}
 
 	var org models.Organization
@@ -95,7 +95,6 @@ func (s *KYCService) GetKYBStatus(ctx context.Context, organizationID string) (*
 		return nil, err
 	}
 
-	// Sync provider status back to our record
 	newStatus := mapVerificationStatus(result.Status)
 	updates := map[string]any{"kyb_status": newStatus}
 	if newStatus == models.KybStatusApproved {
@@ -109,31 +108,28 @@ func (s *KYCService) GetKYBStatus(ctx context.Context, organizationID string) (*
 
 // SubmitKYC sends director identity verification data to the provider.
 func (s *KYCService) SubmitKYC(ctx context.Context, input kyc.KYCSubmission) (*kyc.KYCResult, error) {
-	provider := s.reg.KYC()
-	if provider == nil {
-		return nil, errors.New("KYC provider not configured")
+	provider, err := s.reg.RequireKYC()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.SubmitKYC(ctx, input)
 }
 
 // GetKYCStatus checks director KYC status from the provider.
 func (s *KYCService) GetKYCStatus(ctx context.Context, referenceID string) (*kyc.KYCResult, error) {
-	provider := s.reg.KYC()
-	if provider == nil {
-		return nil, errors.New("KYC provider not configured")
+	provider, err := s.reg.RequireKYC()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.GetKYCStatus(ctx, referenceID)
 }
 
 // GenerateVerificationURL creates a hosted verification link for a director.
 func (s *KYCService) GenerateVerificationURL(ctx context.Context, applicantID string, redirectURL string) (string, error) {
-	provider := s.reg.KYC()
-	if provider == nil {
-		return "", errors.New("KYC provider not configured")
+	provider, err := s.reg.RequireKYC()
+	if err != nil {
+		return "", err
 	}
-
 	return provider.GenerateVerificationURL(ctx, applicantID, redirectURL)
 }
 

@@ -2,7 +2,6 @@ package services
 
 import (
 	"context"
-	"errors"
 
 	"vaxen/api/internal/models"
 	"vaxen/api/internal/providers"
@@ -23,11 +22,10 @@ func NewExchangeService(db *gorm.DB, reg *providers.Registry) *ExchangeService {
 
 // GetRate returns the current exchange rate between two currencies.
 func (s *ExchangeService) GetRate(ctx context.Context, from, to string) (*exchange.RateResult, error) {
-	provider := s.reg.Exchange()
-	if provider == nil {
-		return nil, errors.New("exchange provider not configured")
+	provider, err := s.reg.RequireExchange()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.GetRate(ctx, exchange.RateRequest{
 		FromCurrency: from,
 		ToCurrency:   to,
@@ -36,11 +34,10 @@ func (s *ExchangeService) GetRate(ctx context.Context, from, to string) (*exchan
 
 // GetQuote returns a locked-in quote for a conversion.
 func (s *ExchangeService) GetQuote(ctx context.Context, from, to string, amount decimal.Decimal, side string) (*exchange.QuoteResult, error) {
-	provider := s.reg.Exchange()
-	if provider == nil {
-		return nil, errors.New("exchange provider not configured")
+	provider, err := s.reg.RequireExchange()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.GetQuote(ctx, exchange.QuoteRequest{
 		FromCurrency: from,
 		ToCurrency:   to,
@@ -51,9 +48,9 @@ func (s *ExchangeService) GetQuote(ctx context.Context, from, to string, amount 
 
 // ExecuteSwap executes a swap and records it as a ConversionOrder.
 func (s *ExchangeService) ExecuteSwap(ctx context.Context, orgID string, quoteID string) (*models.ConversionOrder, error) {
-	provider := s.reg.Exchange()
-	if provider == nil {
-		return nil, errors.New("exchange provider not configured")
+	provider, err := s.reg.RequireExchange()
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := provider.ExecuteSwap(ctx, exchange.SwapRequest{
@@ -66,12 +63,9 @@ func (s *ExchangeService) ExecuteSwap(ctx context.Context, orgID string, quoteID
 
 	order := models.ConversionOrder{
 		OrganizationID: orgID,
-		FromCurrency:   "", // populated from quote
-		ToCurrency:     "",
 		FromAmount:     result.FromAmount,
 		ToAmount:       result.ToAmount,
 		Rate:           result.Rate,
-		Spread:         decimal.Zero,
 		Fee:            result.Fee,
 		Status:         models.OrderStatusCompleted,
 		ProviderRef:    &result.ProviderRef,
@@ -85,10 +79,9 @@ func (s *ExchangeService) ExecuteSwap(ctx context.Context, orgID string, quoteID
 
 // ListSupportedPairs returns all tradable currency pairs.
 func (s *ExchangeService) ListSupportedPairs(ctx context.Context) ([]exchange.CurrencyPair, error) {
-	provider := s.reg.Exchange()
-	if provider == nil {
-		return nil, errors.New("exchange provider not configured")
+	provider, err := s.reg.RequireExchange()
+	if err != nil {
+		return nil, err
 	}
-
 	return provider.ListSupportedPairs(ctx)
 }

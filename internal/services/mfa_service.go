@@ -23,18 +23,16 @@ func NewMFAService(db *gorm.DB, reg *providers.Registry) *MFAService {
 
 // EnrollMFA starts MFA enrollment for a user. Required for directors during signup.
 func (s *MFAService) EnrollMFA(ctx context.Context, userID string, email string) (*mfa.EnrollResult, error) {
-	provider := s.reg.MFA()
-	if provider == nil {
-		return nil, errors.New("MFA provider not configured")
+	provider, err := s.reg.RequireMFA()
+	if err != nil {
+		return nil, err
 	}
 
-	// Check if already enrolled
 	var existing models.MFAEnrollment
 	if err := s.db.Where("user_id = ?", userID).First(&existing).Error; err == nil {
 		if existing.IsConfirmed {
 			return nil, errors.New("MFA already enrolled and confirmed")
 		}
-		// Delete stale enrollment
 		s.db.Delete(&existing)
 	}
 
@@ -62,9 +60,9 @@ func (s *MFAService) EnrollMFA(ctx context.Context, userID string, email string)
 
 // ConfirmMFA confirms MFA enrollment with the first valid code.
 func (s *MFAService) ConfirmMFA(ctx context.Context, userID string, code string) error {
-	provider := s.reg.MFA()
-	if provider == nil {
-		return errors.New("MFA provider not configured")
+	provider, err := s.reg.RequireMFA()
+	if err != nil {
+		return err
 	}
 
 	var enrollment models.MFAEnrollment
@@ -97,9 +95,9 @@ func (s *MFAService) ConfirmMFA(ctx context.Context, userID string, code string)
 
 // SendChallenge sends an MFA challenge to the user (for login verification).
 func (s *MFAService) SendChallenge(ctx context.Context, userID string, channel string) (*mfa.ChallengeResult, error) {
-	provider := s.reg.MFA()
-	if provider == nil {
-		return nil, errors.New("MFA provider not configured")
+	provider, err := s.reg.RequireMFA()
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := provider.SendChallenge(ctx, mfa.ChallengeRequest{
@@ -110,7 +108,6 @@ func (s *MFAService) SendChallenge(ctx context.Context, userID string, channel s
 		return nil, err
 	}
 
-	// Record challenge for audit
 	challenge := models.MFAChallenge{
 		UserID:      userID,
 		ChallengeID: result.ChallengeID,
@@ -122,11 +119,11 @@ func (s *MFAService) SendChallenge(ctx context.Context, userID string, channel s
 	return result, nil
 }
 
-// VerifyCode verifies an MFA code. Returns the user ID if valid.
+// VerifyCode verifies an MFA code provided by the user.
 func (s *MFAService) VerifyCode(ctx context.Context, userID string, code string) error {
-	provider := s.reg.MFA()
-	if provider == nil {
-		return errors.New("MFA provider not configured")
+	provider, err := s.reg.RequireMFA()
+	if err != nil {
+		return err
 	}
 
 	result, err := provider.VerifyCode(ctx, mfa.VerifyRequest{
@@ -146,9 +143,9 @@ func (s *MFAService) VerifyCode(ctx context.Context, userID string, code string)
 
 // UnenrollMFA removes MFA for a user (admin action).
 func (s *MFAService) UnenrollMFA(ctx context.Context, userID string) error {
-	provider := s.reg.MFA()
-	if provider == nil {
-		return errors.New("MFA provider not configured")
+	provider, err := s.reg.RequireMFA()
+	if err != nil {
+		return err
 	}
 
 	if err := provider.Unenroll(ctx, userID); err != nil {

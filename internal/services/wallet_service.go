@@ -21,11 +21,10 @@ func NewWalletService(db *gorm.DB, reg *providers.Registry) *WalletService {
 }
 
 // CreateWeb3Wallet creates a new blockchain wallet for an organization.
-// Called automatically on signup, and can be called manually for additional wallets.
 func (s *WalletService) CreateWeb3Wallet(ctx context.Context, orgID string, network string, label string) (*models.Web3Wallet, error) {
-	provider := s.reg.Wallet()
-	if provider == nil {
-		return nil, errors.New("wallet provider not configured")
+	provider, err := s.reg.RequireWallet()
+	if err != nil {
+		return nil, err
 	}
 
 	result, err := provider.CreateWallet(ctx, wallet.CreateWalletRequest{
@@ -55,7 +54,6 @@ func (s *WalletService) CreateWeb3Wallet(ctx context.Context, orgID string, netw
 
 // CreateDefaultWallets creates the standard set of wallets for a new org (fiat + crypto).
 func (s *WalletService) CreateDefaultWallets(ctx context.Context, orgID string) error {
-	// Create fiat wallets
 	fiatCurrencies := []string{"USD", "EUR", "GBP"}
 	for _, currency := range fiatCurrencies {
 		w := models.Wallet{
@@ -69,7 +67,6 @@ func (s *WalletService) CreateDefaultWallets(ctx context.Context, orgID string) 
 		}
 	}
 
-	// Create web3 wallets
 	networks := []string{"ethereum", "polygon"}
 	for _, network := range networks {
 		if _, err := s.CreateWeb3Wallet(ctx, orgID, network, network+" default"); err != nil {
@@ -109,9 +106,9 @@ func (s *WalletService) GetWeb3Wallets(orgID string) ([]models.Web3Wallet, error
 
 // GetWeb3Balance queries the on-chain balance via the wallet provider.
 func (s *WalletService) GetWeb3Balance(ctx context.Context, walletID string) (*wallet.BalanceResult, error) {
-	provider := s.reg.Wallet()
-	if provider == nil {
-		return nil, errors.New("wallet provider not configured")
+	provider, err := s.reg.RequireWallet()
+	if err != nil {
+		return nil, err
 	}
 
 	var w models.Web3Wallet

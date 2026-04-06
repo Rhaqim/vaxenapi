@@ -97,6 +97,46 @@ func (r *Registry) SetPayment(p payment.Provider) {
 	r.payment = p
 }
 
+// RequireKYC returns the KYC provider or an error if not configured.
+func (r *Registry) RequireKYC() (kyc.Provider, error) {
+	if p := r.KYC(); p != nil {
+		return p, nil
+	}
+	return nil, fmt.Errorf("KYC provider not configured")
+}
+
+// RequireMFA returns the MFA provider or an error if not configured.
+func (r *Registry) RequireMFA() (mfa.Provider, error) {
+	if p := r.MFA(); p != nil {
+		return p, nil
+	}
+	return nil, fmt.Errorf("MFA provider not configured")
+}
+
+// RequireWallet returns the Wallet provider or an error if not configured.
+func (r *Registry) RequireWallet() (wallet.Provider, error) {
+	if p := r.Wallet(); p != nil {
+		return p, nil
+	}
+	return nil, fmt.Errorf("wallet provider not configured")
+}
+
+// RequireExchange returns the Exchange provider or an error if not configured.
+func (r *Registry) RequireExchange() (exchange.Provider, error) {
+	if p := r.Exchange(); p != nil {
+		return p, nil
+	}
+	return nil, fmt.Errorf("exchange provider not configured")
+}
+
+// RequirePayment returns the Payment provider or an error if not configured.
+func (r *Registry) RequirePayment() (payment.Provider, error) {
+	if p := r.Payment(); p != nil {
+		return p, nil
+	}
+	return nil, fmt.Errorf("payment provider not configured")
+}
+
 // Validate ensures all required providers are configured.
 func (r *Registry) Validate() error {
 	r.mu.RLock()
