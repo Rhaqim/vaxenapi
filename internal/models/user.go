@@ -10,7 +10,7 @@ import (
 // In Vaxen, users always belong to an organization. Directors (owners/managers)
 // can initiate and approve transactions; other roles have limited permissions.
 type User struct {
-	ID             string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string         `gorm:"type:uuid;primary_key" json:"id"`
 	Email          string         `gorm:"unique;not null" json:"email"`
 	FirstName      string         `gorm:"not null" json:"firstName"`
 	LastName       string         `gorm:"not null" json:"lastName"`

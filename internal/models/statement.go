@@ -23,7 +23,7 @@ const (
 
 // StatementFile represents a statement file
 type StatementFile struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string          `gorm:"type:uuid;not null" json:"organizationId"`
 	Type           StatementType   `gorm:"type:text;not null" json:"type"`
 	Period         datatypes.JSON  `gorm:"type:jsonb;not null" json:"period"`

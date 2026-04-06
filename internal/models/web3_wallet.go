@@ -5,7 +5,7 @@ import "time"
 // Web3Wallet represents a blockchain wallet managed by the platform.
 // Private keys are stored in the configured key management provider (e.g. AWS KMS).
 type Web3Wallet struct {
-	ID             string       `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string       `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string       `gorm:"type:uuid;not null" json:"organizationId"`
 	Address        string       `gorm:"type:text;not null" json:"address"`
 	Network        string       `gorm:"type:text;not null" json:"network"` // "ethereum", "polygon", "bitcoin"

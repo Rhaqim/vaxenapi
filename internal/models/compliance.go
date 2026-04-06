@@ -41,7 +41,7 @@ const (
 
 // ComplianceCase represents a compliance case
 type ComplianceCase struct {
-	ID             string           `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string           `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string           `gorm:"type:uuid;not null" json:"organizationId"`
 	Type           ComplianceType   `gorm:"type:text;not null" json:"type"`
 	Status         ComplianceStatus `gorm:"type:text;default:'pending'" json:"status"`
@@ -60,7 +60,7 @@ func (ComplianceCase) TableName() string {
 
 // ScreeningResult represents a screening result
 type ScreeningResult struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string          `gorm:"type:uuid;not null" json:"organizationId"`
 	Type           ScreeningType   `gorm:"type:text;not null" json:"type"`
 	Status         ScreeningStatus `gorm:"type:text;default:'clean'" json:"status"`

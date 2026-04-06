@@ -25,7 +25,7 @@ const (
 
 // Deposit represents a wallet deposit
 type Deposit struct {
-	ID                string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID                string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID    string          `gorm:"type:uuid;not null" json:"organizationId"`
 	WalletID          string          `gorm:"type:uuid;not null" json:"walletId"`
 	Type              DepositType     `gorm:"type:text;not null" json:"type"`

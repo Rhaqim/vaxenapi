@@ -4,7 +4,7 @@ import "time"
 
 // MFAEnrollment tracks a user's MFA enrollment with the active provider.
 type MFAEnrollment struct {
-	ID           string     `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID           string     `gorm:"type:uuid;primary_key" json:"id"`
 	UserID       string     `gorm:"type:uuid;not null;uniqueIndex" json:"userId"`
 	Provider     string     `gorm:"type:text;not null" json:"provider"` // e.g. "twilio", "totp"
 	ProviderID   string     `gorm:"type:text" json:"providerId"`       // Provider's enrollment/factor ID
@@ -21,7 +21,7 @@ func (MFAEnrollment) TableName() string { return "mfa_enrollments" }
 
 // MFAChallenge tracks issued MFA challenges for audit and replay protection.
 type MFAChallenge struct {
-	ID           string     `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID           string     `gorm:"type:uuid;primary_key" json:"id"`
 	UserID       string     `gorm:"type:uuid;not null" json:"userId"`
 	ChallengeID  string     `gorm:"type:text" json:"challengeId"` // Provider's challenge ID
 	Channel      string     `gorm:"type:text;not null" json:"channel"` // "totp", "sms", "email"

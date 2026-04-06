@@ -16,7 +16,7 @@ const (
 
 // AuditLog represents an audit trail entry
 type AuditLog struct {
-	ID             string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string         `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string         `gorm:"type:uuid;not null" json:"organizationId"`
 	UserID         *string        `gorm:"type:uuid" json:"userId"`
 	Action         string         `gorm:"not null" json:"action"`
@@ -36,7 +36,7 @@ func (AuditLog) TableName() string {
 
 // WebhookEvent represents a webhook event
 type WebhookEvent struct {
-	ID             string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string         `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string         `gorm:"type:uuid;not null" json:"organizationId"`
 	Provider       string         `gorm:"not null" json:"provider"`
 	EventType      string         `gorm:"not null" json:"eventType"`

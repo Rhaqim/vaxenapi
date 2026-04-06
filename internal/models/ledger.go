@@ -25,7 +25,7 @@ const (
 
 // Journal represents a journal entry
 type Journal struct {
-	ID             string        `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string        `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string        `gorm:"type:uuid;not null" json:"organizationId"`
 	Type           string        `gorm:"not null" json:"type"`
 	Description    string        `gorm:"not null" json:"description"`
@@ -44,7 +44,7 @@ func (Journal) TableName() string {
 
 // LedgerEntry represents a journal entry line
 type LedgerEntry struct {
-	ID             string           `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string           `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string           `gorm:"type:uuid;not null" json:"organizationId"`
 	JournalID      string           `gorm:"type:uuid;not null" json:"journalId"`
 	Account        string           `gorm:"not null" json:"account"`
@@ -64,7 +64,7 @@ func (LedgerEntry) TableName() string {
 
 // ReconciliationRun represents a reconciliation run
 type ReconciliationRun struct {
-	ID             string               `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string               `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string               `gorm:"type:uuid;not null" json:"organizationId"`
 	Date           time.Time            `json:"date"`
 	Status         ReconciliationStatus `gorm:"type:text;default:'pending'" json:"status"`

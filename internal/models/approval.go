@@ -27,7 +27,7 @@ const (
 
 // ApprovalPolicy defines how many director approvals are required for an action type.
 type ApprovalPolicy struct {
-	ID               string             `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID               string             `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID   string             `gorm:"type:uuid;not null" json:"organizationId"`
 	ActionType       ApprovalActionType `gorm:"type:text;not null" json:"actionType"`
 	RequiredApprovals int               `gorm:"not null;default:1" json:"requiredApprovals"`
@@ -40,7 +40,7 @@ func (ApprovalPolicy) TableName() string { return "approval_policies" }
 
 // ApprovalRequest represents a pending action that requires director approval.
 type ApprovalRequest struct {
-	ID              string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID              string         `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID  string         `gorm:"type:uuid;not null" json:"organizationId"`
 	ActionType      ApprovalActionType `gorm:"type:text;not null" json:"actionType"`
 	ResourceID      string         `gorm:"type:uuid" json:"resourceId"`    // ID of the payout/conversion/etc.
@@ -63,7 +63,7 @@ func (ApprovalRequest) TableName() string { return "approval_requests" }
 
 // ApprovalVote represents a single director's vote on an approval request.
 type ApprovalVote struct {
-	ID                string         `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID                string         `gorm:"type:uuid;primary_key" json:"id"`
 	ApprovalRequestID string         `gorm:"type:uuid;not null" json:"approvalRequestId"`
 	VoterID           string         `gorm:"type:uuid;not null" json:"voterId"`
 	Decision          ApprovalStatus `gorm:"type:text;not null" json:"decision"` // approved or rejected

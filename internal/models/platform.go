@@ -8,7 +8,7 @@ import (
 
 // PlatformSetting stores global platform configuration managed by admins.
 type PlatformSetting struct {
-	ID        string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID        string    `gorm:"type:uuid;primary_key" json:"id"`
 	Key       string    `gorm:"uniqueIndex;not null" json:"key"`
 	Value     string    `gorm:"type:text;not null" json:"value"`
 	Category  string    `gorm:"type:text;not null;default:'general'" json:"category"` // general, exchange, features, providers
@@ -21,7 +21,7 @@ func (PlatformSetting) TableName() string { return "platform_settings" }
 
 // FeatureFlag controls feature availability on the platform.
 type FeatureFlag struct {
-	ID          string    `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID          string    `gorm:"type:uuid;primary_key" json:"id"`
 	Name        string    `gorm:"uniqueIndex;not null" json:"name"`
 	Enabled     bool      `gorm:"default:false" json:"enabled"`
 	Description string    `json:"description"`
@@ -34,7 +34,7 @@ func (FeatureFlag) TableName() string { return "feature_flags" }
 
 // ExchangeRate stores admin-managed exchange rates (for the internal exchange provider).
 type ExchangeRate struct {
-	ID           string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID           string          `gorm:"type:uuid;primary_key" json:"id"`
 	FromCurrency string          `gorm:"type:char(5);not null" json:"fromCurrency"`
 	ToCurrency   string          `gorm:"type:char(5);not null" json:"toCurrency"`
 	Rate         decimal.Decimal `gorm:"type:decimal(20,8);not null" json:"rate"`

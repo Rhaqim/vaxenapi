@@ -36,7 +36,7 @@ const (
 
 // Wallet represents a currency wallet
 type Wallet struct {
-	ID               string              `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID               string              `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID   string              `gorm:"type:uuid;not null" json:"organizationId"`
 	Type             WalletType          `gorm:"type:text;not null" json:"type"`
 	Currency         string              `gorm:"type:char(3);not null" json:"currency"`
@@ -56,7 +56,7 @@ func (Wallet) TableName() string {
 
 // WalletTransaction represents a wallet transaction
 type WalletTransaction struct {
-	ID          string            `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID          string            `gorm:"type:uuid;primary_key" json:"id"`
 	WalletID    string            `gorm:"type:uuid;not null" json:"walletId"`
 	Type        TransactionType   `gorm:"type:text;not null" json:"type"`
 	Amount      decimal.Decimal   `gorm:"type:decimal(20,8);not null" json:"amount"`

@@ -35,7 +35,7 @@ const (
 
 // Payout represents a payout transaction
 type Payout struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string          `gorm:"type:uuid;not null" json:"organizationId"`
 	Type           PayoutType      `gorm:"type:text;not null" json:"type"`
 	Amount         decimal.Decimal `gorm:"type:decimal(20,8);not null" json:"amount"`
@@ -60,7 +60,7 @@ func (Payout) TableName() string {
 
 // PayoutBatch represents a batch of payouts
 type PayoutBatch struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string          `gorm:"type:uuid;not null" json:"organizationId"`
 	Name           string          `gorm:"not null" json:"name"`
 	TotalAmount    decimal.Decimal `gorm:"type:decimal(20,8);not null" json:"totalAmount"`

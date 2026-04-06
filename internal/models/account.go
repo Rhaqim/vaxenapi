@@ -15,7 +15,7 @@ const (
 
 // AccountNumber represents a bank account number
 type AccountNumber struct {
-	ID             string       `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string       `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string       `gorm:"type:uuid;not null" json:"organizationId"`
 	Name           string       `gorm:"not null" json:"name"`
 	Currency       string       `gorm:"type:char(3);not null" json:"currency"`

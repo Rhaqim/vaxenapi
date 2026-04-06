@@ -13,7 +13,7 @@ const (
 
 // Beneficiary represents a payment beneficiary
 type Beneficiary struct {
-	ID             string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string          `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string          `gorm:"type:uuid;not null" json:"organizationId"`
 	Name           string          `gorm:"not null" json:"name"`
 	Type           BeneficiaryType `gorm:"type:text;not null" json:"type"`

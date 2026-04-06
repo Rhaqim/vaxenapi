@@ -16,7 +16,7 @@ const (
 
 // Quote represents a currency conversion quote
 type Quote struct {
-	ID           string          `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID           string          `gorm:"type:uuid;primary_key" json:"id"`
 	FromCurrency string          `gorm:"type:char(3);not null" json:"fromCurrency"`
 	ToCurrency   string          `gorm:"type:char(3);not null" json:"toCurrency"`
 	FromAmount   decimal.Decimal `gorm:"type:decimal(20,8);not null" json:"fromAmount"`

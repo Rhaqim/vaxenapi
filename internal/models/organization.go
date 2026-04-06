@@ -19,7 +19,7 @@ const (
 // Only organizations can hold accounts, send/receive money, and swap currencies.
 // Directors (users with IsDirector=true) initiate actions on behalf of the org.
 type Organization struct {
-	ID                 string              `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID                 string              `gorm:"type:uuid;primary_key" json:"id"`
 	Name               string              `gorm:"not null" json:"name"`
 	LegalName          string              `gorm:"not null" json:"legalName"`
 	RegistrationNumber string              `gorm:"not null" json:"registrationNumber"`

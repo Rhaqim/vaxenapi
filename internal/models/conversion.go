@@ -25,7 +25,7 @@ const (
 
 // ConversionOrder represents a currency conversion order
 type ConversionOrder struct {
-	ID             string           `gorm:"type:uuid;primary_key;default:gen_random_uuid()" json:"id"`
+	ID             string           `gorm:"type:uuid;primary_key" json:"id"`
 	OrganizationID string           `gorm:"type:uuid;not null" json:"organizationId"`
 	FromCurrency   string           `gorm:"type:char(3);not null" json:"fromCurrency"`
 	ToCurrency     string           `gorm:"type:char(3);not null" json:"toCurrency"`
