@@ -43,7 +43,7 @@ func setAuthResponse(c *gin.Context, cfg *config.Config, result *services.AuthRe
 // @Success 200 {object} map[string]any
 // @Failure 400 {object} map[string]any
 // @Failure 401 {object} map[string]any
-// @Router /api/v1/auth/login [post]
+// @Router /auth/login [post]
 func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req services.LoginInput
@@ -99,7 +99,7 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 // @Param request body services.RegisterInput true "Registration details"
 // @Success 201 {object} map[string]any
 // @Failure 400 {object} map[string]any
-// @Router /api/v1/auth/register [post]
+// @Router /auth/register [post]
 func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var req services.RegisterInput
@@ -146,7 +146,7 @@ func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 // @Tags auth
 // @Produce json
 // @Success 200 {object} map[string]any
-// @Router /api/v1/auth/logout [post]
+// @Router /auth/logout [post]
 func Logout(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		utils.ClearAuthCookies(c, cfg.SecureCookies)
@@ -163,7 +163,7 @@ func Logout(cfg *config.Config) gin.HandlerFunc {
 // @Produce json
 // @Success 200 {object} map[string]any
 // @Failure 401 {object} map[string]any
-// @Router /api/v1/auth/refresh [post]
+// @Router /auth/refresh [post]
 func RefreshToken(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// TODO: Implement refresh token logic:

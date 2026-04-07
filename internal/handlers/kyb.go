@@ -18,7 +18,7 @@ import (
 // @Security BearerAuth
 // @Param request body services.KYBSubmitInput true "KYB data"
 // @Success 201 {object} map[string]any
-// @Router /api/v1/kyb/submit [post]
+// @Router /kyb/submit [post]
 func (h *Handler) SubmitKYB(c *gin.Context) {
 	var req services.KYBSubmitInput
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -50,7 +50,7 @@ func (h *Handler) SubmitKYB(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/kyb/status [get]
+// @Router /kyb/status [get]
 func (h *Handler) GetKYBStatus(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 

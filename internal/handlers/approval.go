@@ -17,7 +17,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/approvals/pending [get]
+// @Router /approvals/pending [get]
 func (h *Handler) GetPendingApprovals(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 
@@ -39,7 +39,7 @@ func (h *Handler) GetPendingApprovals(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Approval Request ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/approvals/{id} [get]
+// @Router /approvals/{id} [get]
 func (h *Handler) GetApprovalRequest(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	id := c.Param("id")
@@ -62,7 +62,7 @@ func (h *Handler) GetApprovalRequest(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Approval Request ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/approvals/{id}/vote [post]
+// @Router /approvals/{id}/vote [post]
 func (h *Handler) VoteOnApproval(c *gin.Context) {
 	userID := c.GetString("userId")
 	id := c.Param("id")
@@ -100,7 +100,7 @@ func (h *Handler) VoteOnApproval(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/approvals/policy [put]
+// @Router /approvals/policy [put]
 func (h *Handler) UpdateApprovalPolicy(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 

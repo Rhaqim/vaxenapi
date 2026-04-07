@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Param provider path string true "Provider name"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/webhooks/provider/{provider} [post]
+// @Router /webhooks/provider/{provider} [post]
 func ProcessWebhook(c *gin.Context) {
 	provider := c.Param("provider")
 	var payload map[string]any
@@ -43,7 +43,7 @@ func ProcessWebhook(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/providers [get]
+// @Router /providers [get]
 func GetProviders(c *gin.Context) {
 	// TODO: Fetch from database
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
@@ -71,7 +71,7 @@ func GetProviders(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Provider ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/providers/{id} [get]
+// @Router /providers/{id} [get]
 func GetProvider(c *gin.Context) {
 	id := c.Param("id")
 

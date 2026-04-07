@@ -19,7 +19,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/audit/logs [get]
+// @Router /audit/logs [get]
 func GetAuditLogs(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -46,7 +46,7 @@ func GetAuditLogs(c *gin.Context) {
 // @Param page query int false "Page number"
 // @Param limit query int false "Page size"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/users [get]
+// @Router /admin/users [get]
 func (h *Handler) GetAllUsers(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -69,7 +69,7 @@ func (h *Handler) GetAllUsers(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/users/{id} [get]
+// @Router /admin/users/{id} [get]
 func GetUser(c *gin.Context) {
 	id := c.Param("id")
 
@@ -89,7 +89,7 @@ func GetUser(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/users/{id} [put]
+// @Router /admin/users/{id} [put]
 func UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	var req map[string]any
@@ -113,7 +113,7 @@ func UpdateUser(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/users/{id} [delete]
+// @Router /admin/users/{id} [delete]
 func DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
@@ -133,7 +133,7 @@ func DeleteUser(c *gin.Context) {
 // @Param page query int false "Page number"
 // @Param limit query int false "Page size"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/organizations [get]
+// @Router /admin/organizations [get]
 func (h *Handler) GetAllOrganizations(c *gin.Context) {
 	page, _ := strconv.Atoi(c.DefaultQuery("page", "1"))
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "20"))
@@ -156,7 +156,7 @@ func (h *Handler) GetAllOrganizations(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Organization ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/organizations/{id}/approve [post]
+// @Router /admin/organizations/{id}/approve [post]
 func (h *Handler) ApproveOrganization(c *gin.Context) {
 	id := c.Param("id")
 
@@ -181,7 +181,7 @@ func (h *Handler) ApproveOrganization(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Organization ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/organizations/{id}/reject [post]
+// @Router /admin/organizations/{id}/reject [post]
 func (h *Handler) RejectOrganization(c *gin.Context) {
 	id := c.Param("id")
 
@@ -213,7 +213,7 @@ func (h *Handler) RejectOrganization(c *gin.Context) {
 // @Security BearerAuth
 // @Param category query string false "Filter by category"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/settings [get]
+// @Router /admin/settings [get]
 func (h *Handler) GetPlatformSettings(c *gin.Context) {
 	category := c.Query("category")
 
@@ -234,7 +234,7 @@ func (h *Handler) GetPlatformSettings(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/settings [put]
+// @Router /admin/settings [put]
 func (h *Handler) UpdatePlatformSetting(c *gin.Context) {
 	userID := c.GetString("userId")
 
@@ -266,7 +266,7 @@ func (h *Handler) UpdatePlatformSetting(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/features [get]
+// @Router /admin/features [get]
 func (h *Handler) GetFeatureFlags(c *gin.Context) {
 	flags, err := h.Services.Admin.GetFeatureFlags()
 	if err != nil {
@@ -285,7 +285,7 @@ func (h *Handler) GetFeatureFlags(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/features [put]
+// @Router /admin/features [put]
 func (h *Handler) SetFeatureFlag(c *gin.Context) {
 	userID := c.GetString("userId")
 
@@ -317,7 +317,7 @@ func (h *Handler) SetFeatureFlag(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/exchange-rates [get]
+// @Router /admin/exchange-rates [get]
 func (h *Handler) GetExchangeRates(c *gin.Context) {
 	rates, err := h.Services.Admin.GetExchangeRates()
 	if err != nil {
@@ -336,7 +336,7 @@ func (h *Handler) GetExchangeRates(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/admin/exchange-rates [put]
+// @Router /admin/exchange-rates [put]
 func (h *Handler) UpsertExchangeRate(c *gin.Context) {
 	userID := c.GetString("userId")
 

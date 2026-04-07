@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/wallets [get]
+// @Router /wallets [get]
 func (h *Handler) GetWallets(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 
@@ -38,7 +38,7 @@ func (h *Handler) GetWallets(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Wallet ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/wallets/{id} [get]
+// @Router /wallets/{id} [get]
 func (h *Handler) GetWallet(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	id := c.Param("id")
@@ -60,7 +60,7 @@ func (h *Handler) GetWallet(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/wallets [post]
+// @Router /wallets [post]
 func (h *Handler) CreateWallet(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	var req struct {
@@ -99,7 +99,7 @@ func (h *Handler) CreateWallet(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Wallet ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/wallets/{id}/balance [get]
+// @Router /wallets/{id}/balance [get]
 func (h *Handler) GetWalletBalance(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	id := c.Param("id")
@@ -127,7 +127,7 @@ func (h *Handler) GetWalletBalance(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/wallets/web3 [get]
+// @Router /wallets/web3 [get]
 func (h *Handler) GetWeb3Wallets(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 
@@ -148,7 +148,7 @@ func (h *Handler) GetWeb3Wallets(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/accounts [get]
+// @Router /accounts [get]
 func GetAccounts(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -172,7 +172,7 @@ func GetAccounts(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Account ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/accounts/{id} [get]
+// @Router /accounts/{id} [get]
 func GetAccount(c *gin.Context) {
 	id := c.Param("id")
 
@@ -192,7 +192,7 @@ func GetAccount(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/accounts [post]
+// @Router /accounts [post]
 func CreateAccount(c *gin.Context) {
 	var req map[string]any
 

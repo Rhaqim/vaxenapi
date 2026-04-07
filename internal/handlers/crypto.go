@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/crypto/addresses [get]
+// @Router /crypto/addresses [get]
 func GetCryptoAddresses(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -38,7 +38,7 @@ func GetCryptoAddresses(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/crypto/addresses [post]
+// @Router /crypto/addresses [post]
 func CreateCryptoAddress(c *gin.Context) {
 	var req map[string]any
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -61,7 +61,7 @@ func CreateCryptoAddress(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/crypto/withdraw [post]
+// @Router /crypto/withdraw [post]
 func CryptoWithdraw(c *gin.Context) {
 	var req map[string]any
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/statements [get]
+// @Router /statements [get]
 func GetStatements(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -40,7 +40,7 @@ func GetStatements(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Statement ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/statements/{id} [get]
+// @Router /statements/{id} [get]
 func GetStatement(c *gin.Context) {
 	id := c.Param("id")
 
@@ -60,7 +60,7 @@ func GetStatement(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/reports/fx-pnl [get]
+// @Router /reports/fx-pnl [get]
 func GetFxPnlReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -81,7 +81,7 @@ func GetFxPnlReport(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/reports/transactions [get]
+// @Router /reports/transactions [get]
 func GetTransactionReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -101,7 +101,7 @@ func GetTransactionReport(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/reports/balances [get]
+// @Router /reports/balances [get]
 func GetBalanceReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 

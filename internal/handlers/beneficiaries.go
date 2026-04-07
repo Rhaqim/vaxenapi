@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/beneficiaries [get]
+// @Router /beneficiaries [get]
 func GetBeneficiaries(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -40,7 +40,7 @@ func GetBeneficiaries(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Beneficiary ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/beneficiaries/{id} [get]
+// @Router /beneficiaries/{id} [get]
 func GetBeneficiary(c *gin.Context) {
 	id := c.Param("id")
 
@@ -60,7 +60,7 @@ func GetBeneficiary(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/beneficiaries [post]
+// @Router /beneficiaries [post]
 func CreateBeneficiary(c *gin.Context) {
 	var req map[string]any
 
@@ -85,7 +85,7 @@ func CreateBeneficiary(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Beneficiary ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/beneficiaries/{id} [put]
+// @Router /beneficiaries/{id} [put]
 func UpdateBeneficiary(c *gin.Context) {
 	id := c.Param("id")
 	var req map[string]any
@@ -111,7 +111,7 @@ func UpdateBeneficiary(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Beneficiary ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/beneficiaries/{id} [delete]
+// @Router /beneficiaries/{id} [delete]
 func DeleteBeneficiary(c *gin.Context) {
 	id := c.Param("id")
 

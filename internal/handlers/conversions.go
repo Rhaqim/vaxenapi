@@ -18,7 +18,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/conversions [get]
+// @Router /conversions [get]
 func GetConversions(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -42,7 +42,7 @@ func GetConversions(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Conversion ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/conversions/{id} [get]
+// @Router /conversions/{id} [get]
 func GetConversion(c *gin.Context) {
 	id := c.Param("id")
 
@@ -62,7 +62,7 @@ func GetConversion(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/conversions [post]
+// @Router /conversions [post]
 func (h *Handler) CreateConversion(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	var req struct {
@@ -90,7 +90,7 @@ func (h *Handler) CreateConversion(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/quotes [post]
+// @Router /quotes [post]
 func (h *Handler) CreateQuote(c *gin.Context) {
 	var req struct {
 		FromCurrency string `json:"fromCurrency" binding:"required"`
@@ -127,7 +127,7 @@ func (h *Handler) CreateQuote(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Quote ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/quotes/{id} [get]
+// @Router /quotes/{id} [get]
 func GetQuote(c *gin.Context) {
 	id := c.Param("id")
 
@@ -147,7 +147,7 @@ func GetQuote(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/conversions/pairs [get]
+// @Router /conversions/pairs [get]
 func (h *Handler) GetSupportedPairs(c *gin.Context) {
 	pairs, err := h.Services.Exchange.ListSupportedPairs(c.Request.Context())
 	if err != nil {
@@ -168,7 +168,7 @@ func (h *Handler) GetSupportedPairs(c *gin.Context) {
 // @Param from query string true "Source currency"
 // @Param to query string true "Target currency"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/conversions/rate [get]
+// @Router /conversions/rate [get]
 func (h *Handler) GetRate(c *gin.Context) {
 	from := c.Query("from")
 	to := c.Query("to")

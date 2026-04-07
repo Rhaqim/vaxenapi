@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/orders [get]
+// @Router /orders [get]
 func GetOrders(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -38,7 +38,7 @@ func GetOrders(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/orders/open [get]
+// @Router /orders/open [get]
 func GetOpenOrders(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
@@ -61,7 +61,7 @@ func GetOpenOrders(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Order ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/orders/{id} [get]
+// @Router /orders/{id} [get]
 func GetOrder(c *gin.Context) {
 	id := c.Param("id")
 
@@ -80,7 +80,7 @@ func GetOrder(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
-// @Router /api/v1/orders [post]
+// @Router /orders [post]
 func CreateOrder(c *gin.Context) {
 	var req map[string]any
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -103,7 +103,7 @@ func CreateOrder(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Order ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/orders/{id}/cancel [put]
+// @Router /orders/{id}/cancel [put]
 func CancelOrder(c *gin.Context) {
 	id := c.Param("id")
 

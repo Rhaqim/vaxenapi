@@ -16,7 +16,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/mfa/enroll [post]
+// @Router /mfa/enroll [post]
 func (h *Handler) EnrollMFA(c *gin.Context) {
 	userID := c.GetString("userId")
 	email := c.GetString("email")
@@ -44,7 +44,7 @@ func (h *Handler) EnrollMFA(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body object true "MFA code"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/mfa/confirm [post]
+// @Router /mfa/confirm [post]
 func (h *Handler) ConfirmMFA(c *gin.Context) {
 	userID := c.GetString("userId")
 
@@ -74,7 +74,7 @@ func (h *Handler) ConfirmMFA(c *gin.Context) {
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/mfa/disable [post]
+// @Router /mfa/disable [post]
 func (h *Handler) DisableMFA(c *gin.Context) {
 	userID := c.GetString("userId")
 

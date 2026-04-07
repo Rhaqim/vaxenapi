@@ -19,7 +19,7 @@ import (
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
-// @Router /api/v1/payouts [get]
+// @Router /payouts [get]
 func (h *Handler) GetPayouts(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 
@@ -41,7 +41,7 @@ func (h *Handler) GetPayouts(c *gin.Context) {
 // @Security BearerAuth
 // @Param id path string true "Payout ID"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/payouts/{id} [get]
+// @Router /payouts/{id} [get]
 func (h *Handler) GetPayout(c *gin.Context) {
 	orgID := c.GetString("organizationId")
 	id := c.Param("id")
@@ -64,7 +64,7 @@ func (h *Handler) GetPayout(c *gin.Context) {
 // @Security BearerAuth
 // @Param request body services.SendPaymentInput true "Payout details"
 // @Success 201 {object} map[string]any
-// @Router /api/v1/payouts [post]
+// @Router /payouts [post]
 func (h *Handler) CreatePayout(c *gin.Context) {
 	var req services.SendPaymentInput
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -96,7 +96,7 @@ func (h *Handler) CreatePayout(c *gin.Context) {
 // @Param country query string true "Destination country"
 // @Param method query string true "Payment method (wire, ach, sepa, crypto)"
 // @Success 200 {object} map[string]any
-// @Router /api/v1/payouts/fees [get]
+// @Router /payouts/fees [get]
 func (h *Handler) GetPayoutFees(c *gin.Context) {
 	amountStr := c.Query("amount")
 	currency := c.Query("currency")
