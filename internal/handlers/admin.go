@@ -20,7 +20,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /audit/logs [get]
-func GetAuditLogs(c *gin.Context) {
+func (h *Handler) GetAuditLogs(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
@@ -70,7 +70,7 @@ func (h *Handler) GetAllUsers(c *gin.Context) {
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
 // @Router /admin/users/{id} [get]
-func GetUser(c *gin.Context) {
+func (h *Handler) GetUser(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
@@ -90,7 +90,7 @@ func GetUser(c *gin.Context) {
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
 // @Router /admin/users/{id} [put]
-func UpdateUser(c *gin.Context) {
+func (h *Handler) UpdateUser(c *gin.Context) {
 	id := c.Param("id")
 	var req map[string]any
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -114,7 +114,7 @@ func UpdateUser(c *gin.Context) {
 // @Param id path string true "User ID"
 // @Success 200 {object} map[string]any
 // @Router /admin/users/{id} [delete]
-func DeleteUser(c *gin.Context) {
+func (h *Handler) DeleteUser(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{

@@ -1,13 +1,16 @@
 package handlers
 
-import "vaxen/api/internal/services"
+import (
+	"vaxen/api/internal/config"
+	"vaxen/api/internal/services"
+)
 
-// Handler holds all service dependencies for HTTP handlers.
-// Individual handler files define methods on this struct.
+// Handler holds all dependencies for HTTP handlers.
 type Handler struct {
 	Services *services.Container
+	Config   *config.Config
 }
 
-func NewHandler(svc *services.Container) *Handler {
-	return &Handler{Services: svc}
+func NewHandler(svc *services.Container, cfg *config.Config) *Handler {
+	return &Handler{Services: svc, Config: cfg}
 }

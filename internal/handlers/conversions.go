@@ -19,7 +19,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /conversions [get]
-func GetConversions(c *gin.Context) {
+func (h *Handler) GetConversions(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
@@ -43,7 +43,7 @@ func GetConversions(c *gin.Context) {
 // @Param id path string true "Conversion ID"
 // @Success 200 {object} map[string]any
 // @Router /conversions/{id} [get]
-func GetConversion(c *gin.Context) {
+func (h *Handler) GetConversion(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
@@ -128,7 +128,7 @@ func (h *Handler) CreateQuote(c *gin.Context) {
 // @Param id path string true "Quote ID"
 // @Success 200 {object} map[string]any
 // @Router /quotes/{id} [get]
-func GetQuote(c *gin.Context) {
+func (h *Handler) GetQuote(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{

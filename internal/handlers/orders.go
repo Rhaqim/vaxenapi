@@ -17,7 +17,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /orders [get]
-func GetOrders(c *gin.Context) {
+func (h *Handler) GetOrders(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
@@ -39,7 +39,7 @@ func GetOrders(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /orders/open [get]
-func GetOpenOrders(c *gin.Context) {
+func (h *Handler) GetOpenOrders(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
@@ -62,7 +62,7 @@ func GetOpenOrders(c *gin.Context) {
 // @Param id path string true "Order ID"
 // @Success 200 {object} map[string]any
 // @Router /orders/{id} [get]
-func GetOrder(c *gin.Context) {
+func (h *Handler) GetOrder(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
@@ -81,7 +81,7 @@ func GetOrder(c *gin.Context) {
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /orders [post]
-func CreateOrder(c *gin.Context) {
+func (h *Handler) CreateOrder(c *gin.Context) {
 	var req map[string]any
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
@@ -104,7 +104,7 @@ func CreateOrder(c *gin.Context) {
 // @Param id path string true "Order ID"
 // @Success 200 {object} map[string]any
 // @Router /orders/{id}/cancel [put]
-func CancelOrder(c *gin.Context) {
+func (h *Handler) CancelOrder(c *gin.Context) {
 	id := c.Param("id")
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{

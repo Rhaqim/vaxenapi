@@ -149,7 +149,7 @@ func (h *Handler) GetWeb3Wallets(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /accounts [get]
-func GetAccounts(c *gin.Context) {
+func (h *Handler) GetAccounts(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Fetch from database
@@ -173,7 +173,7 @@ func GetAccounts(c *gin.Context) {
 // @Param id path string true "Account ID"
 // @Success 200 {object} map[string]any
 // @Router /accounts/{id} [get]
-func GetAccount(c *gin.Context) {
+func (h *Handler) GetAccount(c *gin.Context) {
 	id := c.Param("id")
 
 	// TODO: Fetch from database
@@ -193,7 +193,7 @@ func GetAccount(c *gin.Context) {
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /accounts [post]
-func CreateAccount(c *gin.Context) {
+func (h *Handler) CreateAccount(c *gin.Context) {
 	var req map[string]any
 
 	if err := c.ShouldBindJSON(&req); err != nil {

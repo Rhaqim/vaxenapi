@@ -58,6 +58,13 @@ migrate: ## Run database migrations
 	@echo "Running database migrations..."
 	go run $(MIGRATE_ENTRYPOINT)
 
+seed-admin: ## Create a platform admin user (usage: make seed-admin EMAIL=admin@vaxen.io PASSWORD=securepass)
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		echo "Usage: make seed-admin EMAIL=admin@vaxen.io PASSWORD=yourpassword"; \
+		exit 1; \
+	fi
+	go run cmd/seed/main.go admin $(EMAIL) $(PASSWORD)
+
 dockerbinary: $(DOCKER_SERVER_BIN_PATH) ## Build the Go binary for Docker
 
 $(DOCKER_SERVER_BIN_PATH): $(wildcard *.go) go.mod go.sum

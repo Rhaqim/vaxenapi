@@ -17,7 +17,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /statements [get]
-func GetStatements(c *gin.Context) {
+func (h *Handler) GetStatements(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Fetch from database
@@ -41,7 +41,7 @@ func GetStatements(c *gin.Context) {
 // @Param id path string true "Statement ID"
 // @Success 200 {object} map[string]any
 // @Router /statements/{id} [get]
-func GetStatement(c *gin.Context) {
+func (h *Handler) GetStatement(c *gin.Context) {
 	id := c.Param("id")
 
 	// TODO: Fetch from database
@@ -61,7 +61,7 @@ func GetStatement(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /reports/fx-pnl [get]
-func GetFxPnlReport(c *gin.Context) {
+func (h *Handler) GetFxPnlReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Calculate from database
@@ -82,7 +82,7 @@ func GetFxPnlReport(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /reports/transactions [get]
-func GetTransactionReport(c *gin.Context) {
+func (h *Handler) GetTransactionReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Calculate from database
@@ -102,7 +102,7 @@ func GetTransactionReport(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /reports/balances [get]
-func GetBalanceReport(c *gin.Context) {
+func (h *Handler) GetBalanceReport(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Calculate from database

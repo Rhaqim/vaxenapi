@@ -17,7 +17,7 @@ import (
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /organizations [get]
-func GetOrganizations(c *gin.Context) {
+func (h *Handler) GetOrganizations(c *gin.Context) {
 	organizationID := c.GetString("organizationId")
 
 	// TODO: Fetch from database
@@ -42,7 +42,7 @@ func GetOrganizations(c *gin.Context) {
 // @Param id path string true "Organization ID"
 // @Success 200 {object} map[string]any
 // @Router /organizations/{id} [get]
-func GetOrganization(c *gin.Context) {
+func (h *Handler) GetOrganization(c *gin.Context) {
 	id := c.Param("id")
 
 	// TODO: Fetch from database
@@ -62,7 +62,7 @@ func GetOrganization(c *gin.Context) {
 // @Security BearerAuth
 // @Success 201 {object} map[string]any
 // @Router /organizations [post]
-func CreateOrganization(c *gin.Context) {
+func (h *Handler) CreateOrganization(c *gin.Context) {
 	var req map[string]any
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -87,7 +87,7 @@ func CreateOrganization(c *gin.Context) {
 // @Param id path string true "Organization ID"
 // @Success 200 {object} map[string]any
 // @Router /organizations/{id} [put]
-func UpdateOrganization(c *gin.Context) {
+func (h *Handler) UpdateOrganization(c *gin.Context) {
 	id := c.Param("id")
 	var req map[string]any
 

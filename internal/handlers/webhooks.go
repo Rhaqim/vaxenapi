@@ -17,7 +17,7 @@ import (
 // @Param provider path string true "Provider name"
 // @Success 200 {object} map[string]any
 // @Router /webhooks/provider/{provider} [post]
-func ProcessWebhook(c *gin.Context) {
+func (h *Handler) ProcessWebhook(c *gin.Context) {
 	provider := c.Param("provider")
 	var payload map[string]any
 
@@ -44,7 +44,7 @@ func ProcessWebhook(c *gin.Context) {
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /providers [get]
-func GetProviders(c *gin.Context) {
+func (h *Handler) GetProviders(c *gin.Context) {
 	// TODO: Fetch from database
 	utils.SuccessResponse(c, http.StatusOK, []gin.H{
 		{
@@ -72,7 +72,7 @@ func GetProviders(c *gin.Context) {
 // @Param id path string true "Provider ID"
 // @Success 200 {object} map[string]any
 // @Router /providers/{id} [get]
-func GetProvider(c *gin.Context) {
+func (h *Handler) GetProvider(c *gin.Context) {
 	id := c.Param("id")
 
 	// TODO: Fetch from database

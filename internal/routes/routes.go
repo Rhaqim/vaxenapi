@@ -13,7 +13,7 @@ import (
 
 // SetupRoutes configures all application routes
 func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container) {
-	h := handlers.NewHandler(svc)
+	h := handlers.NewHandler(svc, cfg)
 
 	// Health check endpoint
 	router.GET("/health", handlers.HealthCheck)
@@ -27,18 +27,18 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 		// Public routes (no authentication required)
 		public := v1.Group("/")
 		{
-			public.POST("/auth/request-access", handlers.RequestAccess(svc))
-			public.POST("/auth/register", handlers.Register(cfg, svc))
-			public.POST("/auth/login", handlers.Login(cfg, svc))
-			public.POST("/auth/refresh", handlers.RefreshToken(cfg))
-			public.POST("/auth/logout", handlers.Logout(cfg))
+			public.POST("/auth/request-access", h.RequestAccess)
+			public.POST("/auth/register", h.Register)
+			public.POST("/auth/login", h.Login)
+			public.POST("/auth/refresh", h.RefreshToken)
+			public.POST("/auth/logout", h.Logout)
 		}
 
 		// Protected routes (authentication required)
 		protected := v1.Group("/")
 		protected.Use(middleware.AuthMiddleware(cfg))
 		{
-			// MFA (must be accessible before MFA is set up)
+			// MFA
 			mfa := protected.Group("/mfa")
 			{
 				mfa.POST("/enroll", h.EnrollMFA)
@@ -49,10 +49,10 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Organizations
 			organizations := protected.Group("/organizations")
 			{
-				organizations.GET("/", handlers.GetOrganizations)
-				organizations.GET("/:id", handlers.GetOrganization)
-				organizations.POST("/", handlers.CreateOrganization)
-				organizations.PUT("/:id", handlers.UpdateOrganization)
+				organizations.GET("/", h.GetOrganizations)
+				organizations.GET("/:id", h.GetOrganization)
+				organizations.POST("/", h.CreateOrganization)
+				organizations.PUT("/:id", h.UpdateOrganization)
 			}
 
 			// KYB (Know Your Business)
@@ -75,46 +75,46 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Accounts
 			accounts := protected.Group("/accounts")
 			{
-				accounts.GET("/", handlers.GetAccounts)
-				accounts.GET("/:id", handlers.GetAccount)
-				accounts.POST("/", handlers.CreateAccount)
+				accounts.GET("/", h.GetAccounts)
+				accounts.GET("/:id", h.GetAccount)
+				accounts.POST("/", h.CreateAccount)
 			}
 
 			// Quotes
 			quotes := protected.Group("/quotes")
 			{
 				quotes.POST("/", h.CreateQuote)
-				quotes.GET("/:id", handlers.GetQuote)
+				quotes.GET("/:id", h.GetQuote)
 			}
 
 			// Conversions / Swaps
 			conversions := protected.Group("/conversions")
 			{
 				conversions.POST("/", h.CreateConversion)
-				conversions.GET("/", handlers.GetConversions)
+				conversions.GET("/", h.GetConversions)
 				conversions.GET("/pairs", h.GetSupportedPairs)
 				conversions.GET("/rate", h.GetRate)
-				conversions.GET("/:id", handlers.GetConversion)
+				conversions.GET("/:id", h.GetConversion)
 			}
 
 			// Orders
 			orders := protected.Group("/orders")
 			{
-				orders.GET("/", handlers.GetOrders)
-				orders.GET("/open", handlers.GetOpenOrders)
-				orders.GET("/:id", handlers.GetOrder)
-				orders.POST("/", handlers.CreateOrder)
-				orders.PUT("/:id/cancel", handlers.CancelOrder)
+				orders.GET("/", h.GetOrders)
+				orders.GET("/open", h.GetOpenOrders)
+				orders.GET("/:id", h.GetOrder)
+				orders.POST("/", h.CreateOrder)
+				orders.PUT("/:id/cancel", h.CancelOrder)
 			}
 
 			// Beneficiaries
 			beneficiaries := protected.Group("/beneficiaries")
 			{
-				beneficiaries.GET("/", handlers.GetBeneficiaries)
-				beneficiaries.GET("/:id", handlers.GetBeneficiary)
-				beneficiaries.POST("/", handlers.CreateBeneficiary)
-				beneficiaries.PUT("/:id", handlers.UpdateBeneficiary)
-				beneficiaries.DELETE("/:id", handlers.DeleteBeneficiary)
+				beneficiaries.GET("/", h.GetBeneficiaries)
+				beneficiaries.GET("/:id", h.GetBeneficiary)
+				beneficiaries.POST("/", h.CreateBeneficiary)
+				beneficiaries.PUT("/:id", h.UpdateBeneficiary)
+				beneficiaries.DELETE("/:id", h.DeleteBeneficiary)
 			}
 
 			// Payouts / Send Money
@@ -129,9 +129,9 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Crypto
 			crypto := protected.Group("/crypto")
 			{
-				crypto.GET("/addresses", handlers.GetCryptoAddresses)
-				crypto.POST("/addresses", handlers.CreateCryptoAddress)
-				crypto.POST("/withdraw", handlers.CryptoWithdraw)
+				crypto.GET("/addresses", h.GetCryptoAddresses)
+				crypto.POST("/addresses", h.CreateCryptoAddress)
+				crypto.POST("/withdraw", h.CryptoWithdraw)
 			}
 
 			// Approvals (multi-director workflow)
@@ -146,36 +146,36 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Statements
 			statements := protected.Group("/statements")
 			{
-				statements.GET("/", handlers.GetStatements)
-				statements.GET("/:id", handlers.GetStatement)
+				statements.GET("/", h.GetStatements)
+				statements.GET("/:id", h.GetStatement)
 			}
 
 			// Reports
 			reports := protected.Group("/reports")
 			{
-				reports.GET("/fx-pnl", handlers.GetFxPnlReport)
-				reports.GET("/transactions", handlers.GetTransactionReport)
-				reports.GET("/balances", handlers.GetBalanceReport)
+				reports.GET("/fx-pnl", h.GetFxPnlReport)
+				reports.GET("/transactions", h.GetTransactionReport)
+				reports.GET("/balances", h.GetBalanceReport)
 			}
 
 			// Audit
 			audit := protected.Group("/audit")
 			{
-				audit.GET("/logs", handlers.GetAuditLogs)
+				audit.GET("/logs", h.GetAuditLogs)
 			}
 
 			// Providers
 			providers := protected.Group("/providers")
 			{
-				providers.GET("/", handlers.GetProviders)
-				providers.GET("/:id", handlers.GetProvider)
+				providers.GET("/", h.GetProviders)
+				providers.GET("/:id", h.GetProvider)
 			}
 		}
 
 		// Webhooks (public but with provider authentication)
 		webhooks := v1.Group("/webhooks")
 		{
-			webhooks.POST("/provider/:provider", handlers.ProcessWebhook)
+			webhooks.POST("/provider/:provider", h.ProcessWebhook)
 		}
 
 		// Platform Admin routes (require admin role)
@@ -185,9 +185,9 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 		{
 			// User management
 			admin.GET("/users", h.GetAllUsers)
-			admin.GET("/users/:id", handlers.GetUser)
-			admin.PUT("/users/:id", handlers.UpdateUser)
-			admin.DELETE("/users/:id", handlers.DeleteUser)
+			admin.GET("/users/:id", h.GetUser)
+			admin.PUT("/users/:id", h.UpdateUser)
+			admin.DELETE("/users/:id", h.DeleteUser)
 
 			// Organization management
 			admin.GET("/organizations", h.GetAllOrganizations)

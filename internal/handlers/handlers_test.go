@@ -54,7 +54,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
 
 	svc := services.NewContainer(db, cfg, reg)
-	h := handlers.NewHandler(svc)
+	h := handlers.NewHandler(svc, cfg)
 
 	router := gin.New()
 	return &testEnv{router: router, h: h, svc: svc, db: db, cfg: cfg}
@@ -120,7 +120,7 @@ func getCookie(w *httptest.ResponseRecorder, name string) string {
 
 func TestHandler_RequestAccess(t *testing.T) {
 	env := setupTestEnv(t)
-	env.router.POST("/auth/request-access", handlers.RequestAccess(env.svc))
+	env.router.POST("/auth/request-access", env.h.RequestAccess)
 
 	body := map[string]any{
 		"firstName": "New", "lastName": "User", "email": "new@corp.com",
@@ -143,7 +143,7 @@ func TestHandler_RequestAccess(t *testing.T) {
 
 func TestHandler_RequestAccess_Honeypot(t *testing.T) {
 	env := setupTestEnv(t)
-	env.router.POST("/auth/request-access", handlers.RequestAccess(env.svc))
+	env.router.POST("/auth/request-access", env.h.RequestAccess)
 
 	body := map[string]any{
 		"firstName": "Bot", "lastName": "User", "email": "bot@corp.com",
@@ -167,7 +167,7 @@ func TestHandler_RequestAccess_Honeypot(t *testing.T) {
 
 func TestHandler_Register(t *testing.T) {
 	env := setupTestEnv(t)
-	env.router.POST("/auth/register", handlers.Register(env.cfg, env.svc))
+	env.router.POST("/auth/register", env.h.Register)
 
 	// Create and approve access request via service
 	accessReq, _ := env.svc.Auth.RequestAccess(services.RequestAccessInput{
@@ -202,7 +202,7 @@ func TestHandler_Register(t *testing.T) {
 
 func TestHandler_Login(t *testing.T) {
 	env := setupTestEnv(t)
-	env.router.POST("/auth/login", handlers.Login(env.cfg, env.svc))
+	env.router.POST("/auth/login", env.h.Login)
 
 	// Register user via the full flow
 	accessReq, _ := env.svc.Auth.RequestAccess(services.RequestAccessInput{
@@ -234,7 +234,7 @@ func TestHandler_Login(t *testing.T) {
 
 func TestHandler_Login_InvalidCredentials(t *testing.T) {
 	env := setupTestEnv(t)
-	env.router.POST("/auth/login", handlers.Login(env.cfg, env.svc))
+	env.router.POST("/auth/login", env.h.Login)
 
 	body := map[string]any{"email": "nobody@corp.com", "password": "wrongpass1"}
 	var buf bytes.Buffer
