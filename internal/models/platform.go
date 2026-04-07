@@ -12,7 +12,7 @@ type PlatformSetting struct {
 	Key       string    `gorm:"uniqueIndex;not null" json:"key"`
 	Value     string    `gorm:"type:text;not null" json:"value"`
 	Category  string    `gorm:"type:text;not null;default:'general'" json:"category"` // general, exchange, features, providers
-	UpdatedBy string    `gorm:"type:uuid" json:"updatedBy"`
+	UpdatedBy string    `gorm:"type:text" json:"updatedBy"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }
@@ -25,7 +25,7 @@ type FeatureFlag struct {
 	Name        string    `gorm:"uniqueIndex;not null" json:"name"`
 	Enabled     bool      `gorm:"default:false" json:"enabled"`
 	Description string    `json:"description"`
-	UpdatedBy   string    `gorm:"type:uuid" json:"updatedBy"`
+	UpdatedBy   string    `gorm:"type:text" json:"updatedBy"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
 }
@@ -40,7 +40,7 @@ type ExchangeRate struct {
 	Rate         decimal.Decimal `gorm:"type:decimal(20,8);not null" json:"rate"`
 	Spread       decimal.Decimal `gorm:"type:decimal(10,6);default:0" json:"spread"`
 	IsActive     bool            `gorm:"default:true" json:"isActive"`
-	UpdatedBy    string          `gorm:"type:uuid" json:"updatedBy"`
+	UpdatedBy    string          `gorm:"type:text" json:"updatedBy"`
 	CreatedAt    time.Time       `json:"createdAt"`
 	UpdatedAt    time.Time       `json:"updatedAt"`
 }
