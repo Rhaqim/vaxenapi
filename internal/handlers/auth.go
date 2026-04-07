@@ -11,11 +11,9 @@ import (
 )
 
 // setAuthResponse sets the httpOnly cookie and returns user info.
-// The token is never exposed in the response body.
 func setAuthResponse(c *gin.Context, cfg *config.Config, result *services.AuthResult) {
 	csrfToken, _ := utils.GenerateCSRFToken()
 	maxAge := int(cfg.JWTExpiration.Seconds())
-
 	utils.SetAuthCookies(c, result.Token, csrfToken, cfg.SecureCookies, maxAge)
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
@@ -31,6 +29,90 @@ func setAuthResponse(c *gin.Context, cfg *config.Config, result *services.AuthRe
 			"mfaEnabled":     result.User.MFAEnabled,
 		},
 	})
+}
+
+// RequestAccess godoc
+// @Summary Request platform access
+// @Description Submit a business application to join the platform. An admin will review it.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body services.RequestAccessInput true "Access request details"
+// @Success 201 {object} map[string]any
+// @Failure 400 {object} map[string]any
+// @Router /auth/request-access [post]
+func RequestAccess(svc *services.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req services.RequestAccessInput
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		// Honeypot: bots fill hidden fields. Return success so the bot
+		// thinks it worked — revealing an error would help it adapt.
+		if req.Honeypot != "" {
+			utils.SuccessResponse(c, http.StatusCreated, gin.H{
+				"message": "Your request has been submitted. We'll be in touch.",
+			})
+			return
+		}
+
+		_, err := svc.Auth.RequestAccess(req)
+		if err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		utils.SuccessResponse(c, http.StatusCreated, gin.H{
+			"message": "Your request has been submitted. We'll be in touch.",
+		})
+	}
+}
+
+// Register godoc
+// @Summary Register with invite token
+// @Description Create account after an admin has approved your access request. Requires the invite token from the approval email.
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body services.RegisterInput true "Registration details"
+// @Success 201 {object} map[string]any
+// @Failure 400 {object} map[string]any
+// @Router /auth/register [post]
+func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req services.RegisterInput
+		if err := c.ShouldBindJSON(&req); err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		result, err := svc.Auth.Register(req)
+		if err != nil {
+			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		go svc.Wallet.CreateDefaultWallets(c.Request.Context(), result.User.OrganizationID)
+
+		csrfToken, _ := utils.GenerateCSRFToken()
+		maxAge := int(cfg.JWTExpiration.Seconds())
+		utils.SetAuthCookies(c, result.Token, csrfToken, cfg.SecureCookies, maxAge)
+
+		utils.SuccessResponse(c, http.StatusCreated, gin.H{
+			"csrfToken":   csrfToken,
+			"requiresMfa": result.RequiresMFA,
+			"user": gin.H{
+				"id":             result.User.ID,
+				"email":          result.User.Email,
+				"organizationId": result.User.OrganizationID,
+				"role":           result.User.Role,
+				"isDirector":     result.User.IsDirector,
+			},
+			"message": "Registration successful. Please set up MFA to continue.",
+		})
+	}
 }
 
 // Login godoc
@@ -65,7 +147,6 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 					utils.ErrorResponse(c, http.StatusInternalServerError, "failed to send MFA challenge")
 					return
 				}
-				// Return challenge info without leaking the userId
 				utils.SuccessResponse(c, http.StatusOK, gin.H{
 					"requiresMfa":  true,
 					"challengeId":  challenge.ChallengeID,
@@ -87,56 +168,6 @@ func Login(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
 		}
 
 		setAuthResponse(c, cfg, result)
-	}
-}
-
-// Register godoc
-// @Summary Business registration
-// @Description Register a new business. Token set as httpOnly cookie.
-// @Tags auth
-// @Accept json
-// @Produce json
-// @Param request body services.RegisterInput true "Registration details"
-// @Success 201 {object} map[string]any
-// @Failure 400 {object} map[string]any
-// @Router /auth/register [post]
-func Register(cfg *config.Config, svc *services.Container) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		var req services.RegisterInput
-		if err := c.ShouldBindJSON(&req); err != nil {
-			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		if req.Honeypot != "" {
-			utils.SuccessResponse(c, http.StatusCreated, gin.H{"message": "Registration successful"})
-			return
-		}
-
-		result, err := svc.Auth.Register(req)
-		if err != nil {
-			utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-			return
-		}
-
-		go svc.Wallet.CreateDefaultWallets(c.Request.Context(), result.User.OrganizationID)
-
-		csrfToken, _ := utils.GenerateCSRFToken()
-		maxAge := int(cfg.JWTExpiration.Seconds())
-		utils.SetAuthCookies(c, result.Token, csrfToken, cfg.SecureCookies, maxAge)
-
-		utils.SuccessResponse(c, http.StatusCreated, gin.H{
-			"csrfToken":   csrfToken,
-			"requiresMfa": result.RequiresMFA,
-			"user": gin.H{
-				"id":             result.User.ID,
-				"email":          result.User.Email,
-				"organizationId": result.User.OrganizationID,
-				"role":           result.User.Role,
-				"isDirector":     result.User.IsDirector,
-			},
-			"message": "Registration successful. Please set up MFA to continue.",
-		})
 	}
 }
 
@@ -166,11 +197,6 @@ func Logout(cfg *config.Config) gin.HandlerFunc {
 // @Router /auth/refresh [post]
 func RefreshToken(cfg *config.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// TODO: Implement refresh token logic:
-		// 1. Read refresh token from httpOnly cookie
-		// 2. Validate it against DB (check not revoked)
-		// 3. Issue new access token + rotate refresh token
-		// 4. Set new cookies
 		utils.ErrorResponse(c, http.StatusNotImplemented, "refresh token not yet implemented")
 	}
 }

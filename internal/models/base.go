@@ -48,3 +48,4 @@ func (er *ExchangeRate) BeforeCreate(tx *gorm.DB) error     { GenerateUUID(&er.I
 func (me *MFAEnrollment) BeforeCreate(tx *gorm.DB) error    { GenerateUUID(&me.ID); return nil }
 func (mc *MFAChallenge) BeforeCreate(tx *gorm.DB) error     { GenerateUUID(&mc.ID); return nil }
 func (ww *Web3Wallet) BeforeCreate(tx *gorm.DB) error       { GenerateUUID(&ww.ID); return nil }
+func (ar2 *AccessRequest) BeforeCreate(tx *gorm.DB) error   { GenerateUUID(&ar2.ID); return nil }

@@ -369,3 +369,86 @@ func (h *Handler) UpsertExchangeRate(c *gin.Context) {
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Exchange rate updated"})
 }
+
+// --- Access Requests ---
+
+// GetAccessRequests godoc
+// @Summary Get access requests (Admin)
+// @Description Retrieve all business access requests, optionally filtered by status
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param status query string false "Filter by status (pending, approved, rejected)"
+// @Success 200 {object} map[string]any
+// @Router /admin/access-requests [get]
+func (h *Handler) GetAccessRequests(c *gin.Context) {
+	status := c.Query("status")
+
+	requests, err := h.Services.Auth.GetAccessRequests(status)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, requests)
+}
+
+// ApproveAccessRequest godoc
+// @Summary Approve an access request (Admin)
+// @Description Approve a pending access request and generate an invite token
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Access Request ID"
+// @Success 200 {object} map[string]any
+// @Router /admin/access-requests/{id}/approve [post]
+func (h *Handler) ApproveAccessRequest(c *gin.Context) {
+	id := c.Param("id")
+	adminID := c.GetString("userId")
+
+	req, err := h.Services.Auth.ApproveAccessRequest(id, adminID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"id":      req.ID,
+		"status":  req.Status,
+		"email":   req.Email,
+		"message": "Access request approved. Invite will be sent.",
+	})
+}
+
+// RejectAccessRequest godoc
+// @Summary Reject an access request (Admin)
+// @Description Reject a pending access request
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param id path string true "Access Request ID"
+// @Success 200 {object} map[string]any
+// @Router /admin/access-requests/{id}/reject [post]
+func (h *Handler) RejectAccessRequest(c *gin.Context) {
+	id := c.Param("id")
+	adminID := c.GetString("userId")
+
+	var body struct {
+		Reason string `json:"reason"`
+	}
+	c.ShouldBindJSON(&body)
+
+	if err := h.Services.Auth.RejectAccessRequest(id, adminID, body.Reason); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"id":      id,
+		"status":  "rejected",
+		"message": "Access request rejected",
+	})
+}

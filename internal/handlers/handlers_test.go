@@ -60,18 +60,29 @@ func setupTestEnv(t *testing.T) *testEnv {
 	return &testEnv{router: router, h: h, svc: svc, db: db, cfg: cfg}
 }
 
-// registerAndGetToken registers a user and returns the JWT token.
+// registerAndGetToken runs the full access-request -> approve -> register flow
+// and returns the JWT token, user ID, and org ID.
 func registerAndGetToken(t *testing.T, env *testEnv) (string, string, string) {
 	t.Helper()
+
+	// Step 1: Request access
+	accessReq, err := env.svc.Auth.RequestAccess(services.RequestAccessInput{
+		FirstName: "Handler", LastName: "Test", Email: "handler-test@corp.com",
+		Company: "Handler Corp", Role: "Director", Country: "US",
+	})
+	require.NoError(t, err)
+
+	// Step 2: Admin approves
+	approved, err := env.svc.Auth.ApproveAccessRequest(accessReq.ID, "admin-1")
+	require.NoError(t, err)
+
+	// Step 3: Register with invite token
 	result, err := env.svc.Auth.Register(services.RegisterInput{
-		Email:              "handler-test@corp.com",
-		Password:           "testpassword1",
-		FirstName:          "Handler",
-		LastName:           "Test",
-		CompanyName:        "Handler Corp",
-		LegalName:          "Handler Corp Ltd",
-		RegistrationNumber: "HC-001",
-		Country:            "US",
+		InviteToken: *approved.InviteToken,
+		FirstName:   "Handler",
+		LastName:    "Test",
+		Email:       "handler-test@corp.com",
+		Password:    "testpassword1",
 	})
 	require.NoError(t, err)
 	return result.Token, result.User.ID, result.User.OrganizationID
@@ -107,22 +118,71 @@ func getCookie(w *httptest.ResponseRecorder, name string) string {
 
 // --- Auth Handler Tests ---
 
-func TestHandler_Register(t *testing.T) {
+func TestHandler_RequestAccess(t *testing.T) {
 	env := setupTestEnv(t)
-
-	env.router.POST("/auth/register", handlers.Register(env.cfg, env.svc))
+	env.router.POST("/auth/request-access", handlers.RequestAccess(env.svc))
 
 	body := map[string]any{
-		"firstName":          "New",
-		"lastName":           "User",
-		"email":              "new@corp.com",
-		"password":           "password123",
-		"companyName":        "New Corp",
-		"legalName":          "New Corp Ltd",
-		"registrationNumber": "NC-001",
-		"country":            "US",
+		"firstName": "New", "lastName": "User", "email": "new@corp.com",
+		"company": "New Corp", "role": "CEO", "country": "US",
+		"markets": []string{"US", "EU"}, "annualVolume": "$1M-$10M",
 	}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(body)
+	req := httptest.NewRequest("POST", "/auth/request-access", &buf)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
 
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	resp := parseResponse(t, w)
+	data := resp["data"].(map[string]any)
+	assert.Contains(t, data["message"], "submitted")
+}
+
+func TestHandler_RequestAccess_Honeypot(t *testing.T) {
+	env := setupTestEnv(t)
+	env.router.POST("/auth/request-access", handlers.RequestAccess(env.svc))
+
+	body := map[string]any{
+		"firstName": "Bot", "lastName": "User", "email": "bot@corp.com",
+		"company": "Bot Corp", "role": "CEO",
+		"honeypot": "gotcha",
+	}
+	var buf bytes.Buffer
+	json.NewEncoder(&buf).Encode(body)
+	req := httptest.NewRequest("POST", "/auth/request-access", &buf)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	env.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusCreated, w.Code)
+
+	// Should succeed silently but not create any records
+	var count int64
+	env.db.Model(&models.AccessRequest{}).Where("email = ?", "bot@corp.com").Count(&count)
+	assert.Equal(t, int64(0), count)
+}
+
+func TestHandler_Register(t *testing.T) {
+	env := setupTestEnv(t)
+	env.router.POST("/auth/register", handlers.Register(env.cfg, env.svc))
+
+	// Create and approve access request via service
+	accessReq, _ := env.svc.Auth.RequestAccess(services.RequestAccessInput{
+		FirstName: "Reg", LastName: "User", Email: "reg@corp.com",
+		Company: "Reg Corp", Role: "Director",
+	})
+	approved, _ := env.svc.Auth.ApproveAccessRequest(accessReq.ID, "admin-1")
+
+	body := map[string]any{
+		"inviteToken": *approved.InviteToken,
+		"firstName":   "Reg",
+		"lastName":    "User",
+		"email":       "reg@corp.com",
+		"password":    "password123",
+	}
 	var buf bytes.Buffer
 	json.NewEncoder(&buf).Encode(body)
 	req := httptest.NewRequest("POST", "/auth/register", &buf)
@@ -136,47 +196,23 @@ func TestHandler_Register(t *testing.T) {
 	data := resp["data"].(map[string]any)
 	assert.NotEmpty(t, data["csrfToken"], "should return CSRF token in body")
 	assert.True(t, data["requiresMfa"].(bool))
-
-	// Token should be in httpOnly cookie, NOT in response body
 	assert.Nil(t, data["token"], "token must not be in response body")
 	assert.NotEmpty(t, getCookie(w, utils.AccessTokenCookie), "access token should be in httpOnly cookie")
-}
-
-func TestHandler_Register_Honeypot(t *testing.T) {
-	env := setupTestEnv(t)
-	env.router.POST("/auth/register", handlers.Register(env.cfg, env.svc))
-
-	body := map[string]any{
-		"firstName": "Bot", "lastName": "User", "email": "bot@corp.com",
-		"password": "password123", "companyName": "Bot Corp",
-		"legalName": "Bot Corp Ltd", "registrationNumber": "BOT-1", "country": "US",
-		"honeypot": "gotcha",
-	}
-	var buf bytes.Buffer
-	json.NewEncoder(&buf).Encode(body)
-	req := httptest.NewRequest("POST", "/auth/register", &buf)
-	req.Header.Set("Content-Type", "application/json")
-	w := httptest.NewRecorder()
-
-	env.router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusCreated, w.Code)
-
-	// Should succeed silently but not create any records
-	var count int64
-	env.db.Model(&models.User{}).Where("email = ?", "bot@corp.com").Count(&count)
-	assert.Equal(t, int64(0), count)
 }
 
 func TestHandler_Login(t *testing.T) {
 	env := setupTestEnv(t)
 	env.router.POST("/auth/login", handlers.Login(env.cfg, env.svc))
 
-	// Register user first
+	// Register user via the full flow
+	accessReq, _ := env.svc.Auth.RequestAccess(services.RequestAccessInput{
+		FirstName: "Login", LastName: "Handler", Email: "login-handler@corp.com",
+		Company: "LH Corp", Role: "Director",
+	})
+	approved, _ := env.svc.Auth.ApproveAccessRequest(accessReq.ID, "admin-1")
 	env.svc.Auth.Register(services.RegisterInput{
+		InviteToken: *approved.InviteToken, FirstName: "Login", LastName: "Handler",
 		Email: "login-handler@corp.com", Password: "mypassword12",
-		FirstName: "Login", LastName: "Handler",
-		CompanyName: "LH Corp", LegalName: "LH Corp Ltd",
-		RegistrationNumber: "LH-001", Country: "US",
 	})
 
 	body := map[string]any{"email": "login-handler@corp.com", "password": "mypassword12"}

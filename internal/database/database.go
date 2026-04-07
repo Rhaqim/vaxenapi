@@ -64,6 +64,7 @@ func Migrate() error {
 		&models.MFAEnrollment{},
 		&models.MFAChallenge{},
 		&models.Web3Wallet{},
+		&models.AccessRequest{},
 	)
 }
 

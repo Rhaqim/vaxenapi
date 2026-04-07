@@ -27,8 +27,9 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 		// Public routes (no authentication required)
 		public := v1.Group("/")
 		{
-			public.POST("/auth/login", handlers.Login(cfg, svc))
+			public.POST("/auth/request-access", handlers.RequestAccess(svc))
 			public.POST("/auth/register", handlers.Register(cfg, svc))
+			public.POST("/auth/login", handlers.Login(cfg, svc))
 			public.POST("/auth/refresh", handlers.RefreshToken(cfg))
 			public.POST("/auth/logout", handlers.Logout(cfg))
 		}
@@ -204,6 +205,11 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Exchange rates
 			admin.GET("/exchange-rates", h.GetExchangeRates)
 			admin.PUT("/exchange-rates", h.UpsertExchangeRate)
+
+			// Access requests
+			admin.GET("/access-requests", h.GetAccessRequests)
+			admin.POST("/access-requests/:id/approve", h.ApproveAccessRequest)
+			admin.POST("/access-requests/:id/reject", h.RejectAccessRequest)
 		}
 	}
 }
