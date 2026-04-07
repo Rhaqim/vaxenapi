@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"vaxen/api/internal/config"
+	"vaxen/api/internal/providers/email"
 	"vaxen/api/internal/providers/exchange"
 	"vaxen/api/internal/providers/kyc"
 	"vaxen/api/internal/providers/mfa"
@@ -74,6 +75,26 @@ func Bootstrap(cfg *config.Config) *Registry {
 	default:
 		log.Printf("Using default payment provider: circle")
 		reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
+	}
+
+	// --- Email ---
+	switch cfg.Providers.EmailProvider {
+	case "smtp":
+		reg.SetEmail(email.NewSMTP(email.SMTPConfig{
+			Host:      cfg.Providers.SMTPHost,
+			Port:      cfg.Providers.SMTPPort,
+			Username:  cfg.Providers.SMTPUsername,
+			Password:  cfg.Providers.SMTPPassword,
+			FromEmail: cfg.Providers.EmailFromAddress,
+			FromName:  cfg.Providers.EmailFromName,
+		}))
+	default:
+		log.Printf("Using default email provider: sendgrid")
+		reg.SetEmail(email.NewSendGrid(email.SendGridConfig{
+			APIKey:    cfg.Providers.SendGridAPIKey,
+			FromEmail: cfg.Providers.EmailFromAddress,
+			FromName:  cfg.Providers.EmailFromName,
+		}))
 	}
 
 	return reg

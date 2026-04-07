@@ -63,6 +63,16 @@ type ProviderConfig struct {
 	PaymentProvider string // "circle", "wise", "stripe"
 	CircleAPIKey    string
 	CircleBaseURL   string
+
+	// Email
+	EmailProvider    string // "sendgrid", "smtp"
+	EmailFromAddress string
+	EmailFromName    string
+	SendGridAPIKey   string
+	SMTPHost         string
+	SMTPPort         string
+	SMTPUsername     string
+	SMTPPassword     string
 }
 
 // Load returns the application configuration loaded from environment variables
@@ -107,6 +117,16 @@ func Load() *Config {
 			PaymentProvider: getEnv("PAYMENT_PROVIDER", "circle").String(),
 			CircleAPIKey:    getEnv("CIRCLE_API_KEY", "").String(),
 			CircleBaseURL:   getEnv("CIRCLE_BASE_URL", "https://api.circle.com").String(),
+
+			// Email
+			EmailProvider:    getEnv("EMAIL_PROVIDER", "sendgrid").String(),
+			EmailFromAddress: getEnv("EMAIL_FROM_ADDRESS", "noreply@vaxen.io").String(),
+			EmailFromName:    getEnv("EMAIL_FROM_NAME", "Vaxen").String(),
+			SendGridAPIKey:   getEnv("SENDGRID_API_KEY", "").String(),
+			SMTPHost:         getEnv("SMTP_HOST", "localhost").String(),
+			SMTPPort:         getEnv("SMTP_PORT", "587").String(),
+			SMTPUsername:     getEnv("SMTP_USERNAME", "").String(),
+			SMTPPassword:     getEnv("SMTP_PASSWORD", "").String(),
 		},
 	}
 }

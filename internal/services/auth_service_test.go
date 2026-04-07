@@ -49,7 +49,7 @@ func registerUser(t *testing.T, svc *services.AuthService, email, password strin
 func TestAuthService_RequestAccess(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, err := svc.RequestAccess(services.RequestAccessInput{
 		FirstName:    "Alice",
@@ -72,7 +72,7 @@ func TestAuthService_RequestAccess(t *testing.T) {
 func TestAuthService_RequestAccess_DuplicatePending(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	input := services.RequestAccessInput{
 		FirstName: "Bob", LastName: "Dir", Email: "bob@corp.com",
@@ -90,7 +90,7 @@ func TestAuthService_RequestAccess_DuplicatePending(t *testing.T) {
 func TestAuthService_GetAccessRequests(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "A", LastName: "B", Email: "a@test.com", Company: "A Corp", Role: "CEO",
@@ -115,7 +115,7 @@ func TestAuthService_GetAccessRequests(t *testing.T) {
 func TestAuthService_ApproveAccessRequest(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, _ := svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "App", LastName: "Rove", Email: "approve@test.com",
@@ -131,7 +131,7 @@ func TestAuthService_ApproveAccessRequest(t *testing.T) {
 func TestAuthService_RejectAccessRequest(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, _ := svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "Rej", LastName: "Ect", Email: "reject@test.com",
@@ -150,7 +150,7 @@ func TestAuthService_RejectAccessRequest(t *testing.T) {
 func TestAuthService_ApproveNonPending(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, _ := svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "X", LastName: "Y", Email: "x@test.com",
@@ -169,7 +169,7 @@ func TestAuthService_ApproveNonPending(t *testing.T) {
 func TestAuthService_Register(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	result := registerUser(t, svc, "register@corp.com", "strongpassword123")
 
@@ -194,7 +194,7 @@ func TestAuthService_Register(t *testing.T) {
 func TestAuthService_Register_InvalidInviteToken(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	_, err := svc.Register(services.RegisterInput{
 		InviteToken: "bogus-token",
@@ -210,7 +210,7 @@ func TestAuthService_Register_InvalidInviteToken(t *testing.T) {
 func TestAuthService_Register_EmailMismatch(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, _ := svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "Mis", LastName: "Match", Email: "match@test.com",
@@ -232,7 +232,7 @@ func TestAuthService_Register_EmailMismatch(t *testing.T) {
 func TestAuthService_Register_TokenConsumed(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	req, _ := svc.RequestAccess(services.RequestAccessInput{
 		FirstName: "Once", LastName: "Only", Email: "once@test.com",
@@ -267,7 +267,7 @@ func TestAuthService_Register_TokenConsumed(t *testing.T) {
 func TestAuthService_Login(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	registerUser(t, svc, "login@corp.com", "mypassword123")
 
@@ -283,7 +283,7 @@ func TestAuthService_Login(t *testing.T) {
 func TestAuthService_Login_WrongPassword(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	registerUser(t, svc, "wrong@corp.com", "correctpassword")
 
@@ -298,7 +298,7 @@ func TestAuthService_Login_WrongPassword(t *testing.T) {
 func TestAuthService_Login_NonExistentUser(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	_, err := svc.Login(services.LoginInput{
 		Email:    "nobody@corp.com",
@@ -311,7 +311,7 @@ func TestAuthService_Login_NonExistentUser(t *testing.T) {
 func TestAuthService_Login_MFAEnabled(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	regResult := registerUser(t, svc, "mfa@corp.com", "mfapassword123")
 
@@ -329,7 +329,7 @@ func TestAuthService_Login_MFAEnabled(t *testing.T) {
 func TestAuthService_CompleteLogin(t *testing.T) {
 	db := testutil.SetupTestDB(t)
 	cfg := testutil.TestConfig()
-	svc := services.NewAuthService(db, cfg)
+	svc := services.NewAuthService(db, cfg, nil)
 
 	regResult := registerUser(t, svc, "complete@corp.com", "password1234")
 

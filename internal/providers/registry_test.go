@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"vaxen/api/internal/providers"
+	"vaxen/api/internal/providers/email"
 	"vaxen/api/internal/providers/exchange"
 	"vaxen/api/internal/providers/kyc"
 	"vaxen/api/internal/providers/mfa"
@@ -44,6 +45,7 @@ func TestRegistry_SetAndGet(t *testing.T) {
 	assert.Nil(t, reg.Wallet())
 	assert.Nil(t, reg.Exchange())
 	assert.Nil(t, reg.Payment())
+	assert.Nil(t, reg.Email())
 
 	// Set providers
 	reg.SetKYC(kyc.NewSumSub(kyc.SumSubConfig{}))
@@ -51,6 +53,7 @@ func TestRegistry_SetAndGet(t *testing.T) {
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
 	reg.SetExchange(exchange.NewInternal())
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
+	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 
 	// Now all set
 	assert.NotNil(t, reg.KYC())
@@ -58,12 +61,14 @@ func TestRegistry_SetAndGet(t *testing.T) {
 	assert.NotNil(t, reg.Wallet())
 	assert.NotNil(t, reg.Exchange())
 	assert.NotNil(t, reg.Payment())
+	assert.NotNil(t, reg.Email())
 
 	assert.Equal(t, "sumsub", reg.KYC().Name())
 	assert.Equal(t, "twilio", reg.MFA().Name())
 	assert.Equal(t, "aws_kms", reg.Wallet().Name())
 	assert.Equal(t, "internal", reg.Exchange().Name())
 	assert.Equal(t, "circle", reg.Payment().Name())
+	assert.Equal(t, "sendgrid", reg.Email().Name())
 }
 
 func TestRegistry_Swap(t *testing.T) {
@@ -82,5 +87,6 @@ func fullyConfiguredRegistry() *providers.Registry {
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
 	reg.SetExchange(exchange.NewInternal())
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
+	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 	return reg
 }

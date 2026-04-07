@@ -1,6 +1,7 @@
 package services
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -18,12 +19,13 @@ import (
 )
 
 type AuthService struct {
-	db  *gorm.DB
-	cfg *config.Config
+	db    *gorm.DB
+	cfg   *config.Config
+	email *EmailService
 }
 
-func NewAuthService(db *gorm.DB, cfg *config.Config) *AuthService {
-	return &AuthService{db: db, cfg: cfg}
+func NewAuthService(db *gorm.DB, cfg *config.Config, email *EmailService) *AuthService {
+	return &AuthService{db: db, cfg: cfg, email: email}
 }
 
 // --- Step 1: Request Access (public form, no password) ---
@@ -101,7 +103,10 @@ func (s *AuthService) ApproveAccessRequest(requestID string, adminID string) (*m
 	req.Status = models.AccessRequestApproved
 	req.InviteToken = &token
 
-	// TODO: Send invitation email with link containing the invite token
+	// Send invitation email in the background
+	if s.email != nil {
+		go s.email.SendInvite(context.Background(), req.Email, req.FirstName+" "+req.LastName, token)
+	}
 
 	return &req, nil
 }
@@ -118,12 +123,20 @@ func (s *AuthService) RejectAccessRequest(requestID string, adminID string, reas
 	}
 
 	now := time.Now()
-	return s.db.Model(&req).Updates(map[string]any{
+	if err := s.db.Model(&req).Updates(map[string]any{
 		"status":      models.AccessRequestRejected,
 		"reviewed_by": adminID,
 		"reviewed_at": now,
 		"review_note": reason,
-	}).Error
+	}).Error; err != nil {
+		return err
+	}
+
+	if s.email != nil {
+		go s.email.SendAccessRequestRejected(context.Background(), req.Email, req.FirstName+" "+req.LastName, reason)
+	}
+
+	return nil
 }
 
 // GetAccessRequests returns access requests, optionally filtered by status.

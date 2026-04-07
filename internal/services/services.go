@@ -17,12 +17,14 @@ type Container struct {
 	Payment  *PaymentService
 	Approval *ApprovalService
 	Admin    *AdminService
+	Email    *EmailService
 }
 
 func NewContainer(db *gorm.DB, cfg *config.Config, reg *providers.Registry) *Container {
 	approval := NewApprovalService(db)
+	emailSvc := NewEmailService(cfg, reg)
 	return &Container{
-		Auth:     NewAuthService(db, cfg),
+		Auth:     NewAuthService(db, cfg, emailSvc),
 		KYC:      NewKYCService(db, reg),
 		MFA:      NewMFAService(db, reg),
 		Wallet:   NewWalletService(db, reg),
@@ -30,5 +32,6 @@ func NewContainer(db *gorm.DB, cfg *config.Config, reg *providers.Registry) *Con
 		Payment:  NewPaymentService(db, reg, approval),
 		Approval: approval,
 		Admin:    NewAdminService(db),
+		Email:    emailSvc,
 	}
 }

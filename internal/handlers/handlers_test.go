@@ -12,6 +12,7 @@ import (
 	"vaxen/api/internal/middleware"
 	"vaxen/api/internal/models"
 	"vaxen/api/internal/providers"
+	"vaxen/api/internal/providers/email"
 	"vaxen/api/internal/providers/exchange"
 	"vaxen/api/internal/providers/kyc"
 	"vaxen/api/internal/providers/mfa"
@@ -52,6 +53,7 @@ func setupTestEnv(t *testing.T) *testEnv {
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
 	reg.SetExchange(exchange.NewInternal())
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
+	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 
 	svc := services.NewContainer(db, cfg, reg)
 	h := handlers.NewHandler(svc, cfg)

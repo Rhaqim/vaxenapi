@@ -61,9 +61,9 @@ func main() {
 
 	// Bootstrap providers from config (swap by changing env vars)
 	reg := providers.Bootstrap(cfg)
-	log.Printf("Providers: KYC=%s MFA=%s Wallet=%s Exchange=%s Payment=%s",
+	log.Printf("Providers: KYC=%s MFA=%s Wallet=%s Exchange=%s Payment=%s Email=%s",
 		reg.KYC().Name(), reg.MFA().Name(), reg.Wallet().Name(),
-		reg.Exchange().Name(), reg.Payment().Name())
+		reg.Exchange().Name(), reg.Payment().Name(), reg.Email().Name())
 
 	// Initialize service layer
 	svc := services.NewContainer(database.DB, cfg, reg)
