@@ -1,0 +1,84 @@
+# ============================================================
+# Vaxen API — Development
+# ============================================================
+# Usage:
+#   make dev-up          — start everything
+#   make dev-down        — stop everything
+#   make dev-seed-admin  — create admin user inside the running stack
+#   make dev-seed-rates  — seed exchange rates inside the running stack
+#   make dev-logs        — tail API logs
+#
+# DB is exposed on :5432 so you can run seed/migrate from the host.
+# PgAdmin is at http://localhost:5050
+# ============================================================
+
+name: vaxen-api-dev
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@db:5432/vaxen?sslmode=disable
+      - REDIS_HOST=redis
+      - ENVIRONMENT=development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - vaxen_network
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: vaxen
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vaxen_network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vaxen_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@vaxen.io
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - vaxen_network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  vaxen_network:
+    driver: bridge

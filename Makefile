@@ -1,101 +1,126 @@
-# GO build commands
-GO_CMD                    = go
-BUILD_CMD                 = $(GO_CMD) build
-LINUX_GO_BUILD_CMD        = CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(BUILD_CMD)
+# ============================================================
+# Vaxen API — Makefile
+# ============================================================
 
-# Paths and filenames
-BIN_DIR                   = ./bin
-LOCAL_BINARY_PATH         = $(BIN_DIR)/local_server
-DOCKER_SERVER_BIN_PATH    = $(BIN_DIR)/dev_server
+GO          = go
+BIN_DIR     = ./bin
+SERVER_BIN  = $(BIN_DIR)/server
+IMAGE_NAME  = vaxen-api
+IMAGE_TAG   = latest
 
-# Entry points
-SERVER_ENTRYPOINT         = main.go
-MIGRATE_ENTRYPOINT        = cmd/migrate/main.go
+COMPOSE_DEV  = docker compose -f compose.dev.yml
+COMPOSE_PROD = docker compose -f compose.prod.yml
 
-# Containerization
-CONTAINER_CMD 			  = docker
-COMPOSE_CMD 			  = $(CONTAINER_CMD) compose
-CONTAINER_FILE            = Dockerfile
-COMPOSE_FILE              = docker-compose.dev.yml
-CONTAINER_IMAGE_NAME      = vaxen-api
-CONTAINER_IMAGE_TAG       = latest
+.PHONY: help install build run dev test test-coverage clean swagger migrate \
+        seed-admin seed-rates \
+        dev-up dev-down dev-logs dev-rebuild dev-seed-admin dev-seed-rates dev-migrate \
+        prod-up prod-down prod-logs prod-migrate prod-seed-admin \
+        docker-build lint fmt vet
 
-.PHONY: help build run test clean migrate swagger install dev
+help: ## Show this help
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
-help: ## Display this help message
-	@echo "Available commands:"
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  %-15s %s\n", $$1, $$2}'
+# ==================== Local Development ====================
 
-install: ## Install dependencies
-	go mod download
-	go mod tidy
-	go install github.com/swaggo/swag/cmd/swag@latest
+install: ## Install dependencies and tools
+	$(GO) mod download
+	$(GO) mod tidy
+	$(GO) install github.com/swaggo/swag/cmd/swag@latest
 
-build: ## Build the application
-	$(BUILD_CMD) -o $(LOCAL_BINARY_PATH) $(SERVER_ENTRYPOINT)
+build: ## Build the server binary
+	@mkdir -p $(BIN_DIR)
+	$(GO) build -o $(SERVER_BIN) main.go
 
-run: build ## Build and run the application
-	$(LOCAL_BINARY_PATH)
+run: build ## Build and run locally
+	$(SERVER_BIN)
 
 dev: ## Run with auto-reload (requires air)
 	air
 
-test: ## Run tests
-	go test -v ./...
+test: ## Run all tests
+	CGO_ENABLED=1 $(GO) test ./... -count=1
 
-test-coverage: ## Run tests with coverage
-	go test -v -coverprofile=coverage.out ./...
-	go tool cover -html=coverage.out
+test-coverage: ## Run tests with coverage report
+	CGO_ENABLED=1 $(GO) test -coverprofile=coverage.out ./...
+	$(GO) tool cover -html=coverage.out
 
-clean: ## Clean build artifacts
-	rm -rf $(BIN_DIR)
-	rm -f coverage.out
+clean: ## Remove build artifacts
+	rm -rf $(BIN_DIR) coverage.out
 
-swagger: ## Generate Swagger documentation
-	swag init -g $(SERVER_ENTRYPOINT) --output docs
+swagger: ## Generate Swagger docs
+	swag init -g main.go --output docs
 
-migrate: ## Run database migrations
-	@echo "Running database migrations..."
-	go run $(MIGRATE_ENTRYPOINT)
+migrate: ## Run database migrations (local)
+	$(GO) run cmd/migrate/main.go
 
-seed-admin: ## Create a platform admin user (usage: make seed-admin EMAIL=admin@vaxen.io PASSWORD=securepass)
+seed-admin: ## Create admin user (local). Usage: make seed-admin EMAIL=x PASSWORD=y
 	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
-		echo "Usage: make seed-admin EMAIL=admin@vaxen.io PASSWORD=yourpassword"; \
-		exit 1; \
-	fi
-	go run cmd/seed/main.go admin $(EMAIL) $(PASSWORD)
+		echo "Usage: make seed-admin EMAIL=admin@vaxen.io PASSWORD=yourpassword"; exit 1; fi
+	$(GO) run cmd/seed/main.go admin $(EMAIL) $(PASSWORD)
 
-seed-rates: ## Seed exchange rates (usage: make seed-rates or make seed-rates BASE=USD TARGETS=EUR,GBP)
-	@if [ -z "$(BASE)" ]; then \
-		go run cmd/seed/main.go exchange-rates --all; \
-	else \
-		go run cmd/seed/main.go exchange-rates $(BASE) $(TARGETS); \
-	fi
-
-dockerbinary: $(DOCKER_SERVER_BIN_PATH) ## Build the Go binary for Docker
-
-$(DOCKER_SERVER_BIN_PATH): $(wildcard *.go) go.mod go.sum
-	@echo "🔨 Building Go binary for Alpine Linux..."
-	@mkdir -p $(BIN_DIR)
-	$(LINUX_GO_BUILD_CMD) -o $(DOCKER_SERVER_BIN_PATH) $(SERVER_ENTRYPOINT)
-
-docker-build: ## Build Docker image
-	$(CONTAINER_CMD) build -t $(CONTAINER_IMAGE_NAME):$(CONTAINER_IMAGE_TAG) -f $(CONTAINER_FILE) .
-
-docker-run: ## Run Docker container
-	$(CONTAINER_CMD) run -p 8080:8080 --env-file .env $(CONTAINER_IMAGE_NAME):$(CONTAINER_IMAGE_TAG)
-
-docker-compose-up: dockerbinary ## Start services with docker-compose
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) up -d
-
-docker-compose-down: ## Stop services with docker-compose
-	$(COMPOSE_CMD) -f $(COMPOSE_FILE) down
+seed-rates: ## Seed exchange rates (local). Usage: make seed-rates [BASE=USD TARGETS=EUR,GBP]
+	@if [ -z "$(BASE)" ]; then $(GO) run cmd/seed/main.go exchange-rates --all; \
+	else $(GO) run cmd/seed/main.go exchange-rates $(BASE) $(TARGETS); fi
 
 lint: ## Run linter
 	golangci-lint run
 
 fmt: ## Format code
-	go fmt ./...
+	$(GO) fmt ./...
 
 vet: ## Run go vet
-	go vet ./...
+	$(GO) vet ./...
+
+# ==================== Docker Dev Environment ====================
+
+dev-up: ## Start dev stack (API + Postgres + Redis + pgAdmin)
+	$(COMPOSE_DEV) up -d --build
+	@echo ""
+	@echo "API:     http://localhost:8080"
+	@echo "Swagger: http://localhost:8080/docs/index.html"
+	@echo "pgAdmin: http://localhost:5050"
+	@echo "DB:      localhost:5432 (postgres/password)"
+
+dev-down: ## Stop dev stack
+	$(COMPOSE_DEV) down
+
+dev-rebuild: ## Rebuild and restart the API container
+	$(COMPOSE_DEV) up -d --build api
+
+dev-logs: ## Tail API logs
+	$(COMPOSE_DEV) logs -f api
+
+dev-migrate: ## Run migrations inside the dev stack
+	$(COMPOSE_DEV) exec api /app/migrate
+
+dev-seed-admin: ## Create admin in dev stack. Usage: make dev-seed-admin EMAIL=x PASSWORD=y
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		echo "Usage: make dev-seed-admin EMAIL=admin@vaxen.io PASSWORD=yourpassword"; exit 1; fi
+	$(COMPOSE_DEV) exec api /app/seed admin $(EMAIL) $(PASSWORD)
+
+dev-seed-rates: ## Seed exchange rates in dev stack
+	$(COMPOSE_DEV) exec api /app/seed exchange-rates --all
+
+# ==================== Docker Production ====================
+
+prod-up: ## Start production stack
+	$(COMPOSE_PROD) up -d --build
+
+prod-down: ## Stop production stack
+	$(COMPOSE_PROD) down
+
+prod-logs: ## Tail production API logs
+	$(COMPOSE_PROD) logs -f api
+
+prod-migrate: ## Run migrations in production
+	$(COMPOSE_PROD) exec api /app/migrate
+
+prod-seed-admin: ## Create admin in production. Usage: make prod-seed-admin EMAIL=x PASSWORD=y
+	@if [ -z "$(EMAIL)" ] || [ -z "$(PASSWORD)" ]; then \
+		echo "Usage: make prod-seed-admin EMAIL=admin@vaxen.io PASSWORD=yourpassword"; exit 1; fi
+	$(COMPOSE_PROD) exec api /app/seed admin $(EMAIL) $(PASSWORD)
+
+# ==================== Docker Image ====================
+
+docker-build: ## Build Docker image
+	docker build -t $(IMAGE_NAME):$(IMAGE_TAG) .
