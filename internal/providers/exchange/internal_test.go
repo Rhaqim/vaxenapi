@@ -11,8 +11,54 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// mockRateStore implements exchange.RateStore for testing.
+type mockRateStore struct {
+	rates map[string]mockRate
+}
+
+type mockRate struct {
+	rate   decimal.Decimal
+	spread decimal.Decimal
+}
+
+func newMockStore() *mockRateStore {
+	return &mockRateStore{
+		rates: map[string]mockRate{
+			"USD/EUR": {rate: decimal.NewFromFloat(0.85), spread: decimal.NewFromFloat(0.005)},
+			"USD/GBP": {rate: decimal.NewFromFloat(0.73), spread: decimal.NewFromFloat(0.004)},
+			"USD/ETH": {rate: decimal.NewFromFloat(0.00033), spread: decimal.NewFromFloat(0.001)},
+			"ETH/BTC": {rate: decimal.NewFromFloat(0.055), spread: decimal.NewFromFloat(0.002)},
+		},
+	}
+}
+
+func (m *mockRateStore) GetRate(from, to string) (decimal.Decimal, decimal.Decimal, bool) {
+	key := from + "/" + to
+	r, ok := m.rates[key]
+	if !ok {
+		return decimal.Zero, decimal.Zero, false
+	}
+	return r.rate, r.spread, true
+}
+
+func (m *mockRateStore) ListPairs() []exchange.CurrencyPair {
+	pairs := make([]exchange.CurrencyPair, 0)
+	for key := range m.rates {
+		parts := []byte(key)
+		from := string(parts[:3])
+		to := string(parts[4:])
+		pairs = append(pairs, exchange.CurrencyPair{
+			From: from, To: to,
+			MinAmount: decimal.NewFromInt(1),
+			MaxAmount: decimal.NewFromInt(1000000),
+			Type:      "fiat",
+		})
+	}
+	return pairs
+}
+
 func newInternal() *exchange.Internal {
-	return exchange.NewInternal()
+	return exchange.NewInternal(exchange.InternalConfig{Store: newMockStore()})
 }
 
 func TestInternal_Name(t *testing.T) {
@@ -32,9 +78,29 @@ func TestInternal_GetRate(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "USD", result.FromCurrency)
 	assert.Equal(t, "EUR", result.ToCurrency)
-	assert.True(t, result.Rate.GreaterThan(decimal.Zero))
-	assert.True(t, result.Spread.GreaterThan(decimal.Zero))
+	assert.True(t, result.Rate.Equal(decimal.NewFromFloat(0.85)))
+	assert.True(t, result.Spread.Equal(decimal.NewFromFloat(0.005)))
 	assert.Greater(t, result.Timestamp, int64(0))
+}
+
+func TestInternal_GetRate_NotFound(t *testing.T) {
+	ex := newInternal()
+	_, err := ex.GetRate(context.Background(), exchange.RateRequest{
+		FromCurrency: "USD",
+		ToCurrency:   "JPY",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no exchange rate configured")
+}
+
+func TestInternal_GetRate_NoStore(t *testing.T) {
+	ex := exchange.NewInternal(exchange.InternalConfig{})
+	_, err := ex.GetRate(context.Background(), exchange.RateRequest{
+		FromCurrency: "USD",
+		ToCurrency:   "EUR",
+	})
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no exchange rate configured")
 }
 
 func TestInternal_GetQuote(t *testing.T) {
@@ -71,16 +137,12 @@ func TestInternal_ListSupportedPairs(t *testing.T) {
 	ex := newInternal()
 	pairs, err := ex.ListSupportedPairs(context.Background())
 	require.NoError(t, err)
-	assert.NotEmpty(t, pairs)
+	assert.Len(t, pairs, 4)
+}
 
-	// Check we have all expected pair types
-	types := make(map[string]bool)
-	for _, p := range pairs {
-		types[p.Type] = true
-		assert.NotEmpty(t, p.From)
-		assert.NotEmpty(t, p.To)
-	}
-	assert.True(t, types["fiat"], "should have fiat pairs")
-	assert.True(t, types["crypto"], "should have crypto pairs")
-	assert.True(t, types["cross"], "should have cross pairs")
+func TestInternal_ListSupportedPairs_NoStore(t *testing.T) {
+	ex := exchange.NewInternal(exchange.InternalConfig{})
+	_, err := ex.ListSupportedPairs(context.Background())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "no exchange pairs configured")
 }

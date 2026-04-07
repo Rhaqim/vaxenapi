@@ -65,6 +65,13 @@ seed-admin: ## Create a platform admin user (usage: make seed-admin EMAIL=admin@
 	fi
 	go run cmd/seed/main.go admin $(EMAIL) $(PASSWORD)
 
+seed-rates: ## Seed exchange rates (usage: make seed-rates or make seed-rates BASE=USD TARGETS=EUR,GBP)
+	@if [ -z "$(BASE)" ]; then \
+		go run cmd/seed/main.go exchange-rates --all; \
+	else \
+		go run cmd/seed/main.go exchange-rates $(BASE) $(TARGETS); \
+	fi
+
 dockerbinary: $(DOCKER_SERVER_BIN_PATH) ## Build the Go binary for Docker
 
 $(DOCKER_SERVER_BIN_PATH): $(wildcard *.go) go.mod go.sum

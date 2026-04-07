@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"vaxen/api/internal/services"
 	"vaxen/api/internal/utils"
 
 	"github.com/shopspring/decimal"
@@ -368,6 +369,38 @@ func (h *Handler) UpsertExchangeRate(c *gin.Context) {
 	}
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{"message": "Exchange rate updated"})
+}
+
+// SeedExchangeRates godoc
+// @Summary Seed exchange rates from public API (Admin)
+// @Description Fetch live rates from a public API and bulk-create/update exchange rates
+// @Tags admin
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param request body services.SeedExchangeRatesInput true "Seed parameters"
+// @Success 200 {object} map[string]any
+// @Failure 400 {object} map[string]any
+// @Router /admin/exchange-rates/seed [post]
+func (h *Handler) SeedExchangeRates(c *gin.Context) {
+	userID := c.GetString("userId")
+
+	var req services.SeedExchangeRatesInput
+	if err := c.ShouldBindJSON(&req); err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	results, err := h.Services.Admin.SeedExchangeRates(req, userID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, gin.H{
+		"message": "Exchange rates seeded",
+		"results": results,
+	})
 }
 
 // --- Access Requests ---

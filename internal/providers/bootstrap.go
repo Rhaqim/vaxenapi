@@ -10,12 +10,14 @@ import (
 	"vaxen/api/internal/providers/mfa"
 	"vaxen/api/internal/providers/payment"
 	"vaxen/api/internal/providers/wallet"
+
+	"gorm.io/gorm"
 )
 
 // Bootstrap creates and configures a Registry from application config.
 // Each provider is selected based on the corresponding env var.
 // To swap a provider, change the env var and restart — or call Set* at runtime.
-func Bootstrap(cfg *config.Config) *Registry {
+func Bootstrap(cfg *config.Config, db *gorm.DB) *Registry {
 	reg := NewRegistry()
 
 	// --- KYC ---
@@ -57,12 +59,16 @@ func Bootstrap(cfg *config.Config) *Registry {
 	}
 
 	// --- Exchange ---
+	var rateStore exchange.RateStore
+	if db != nil {
+		rateStore = exchange.NewGormRateStore(db)
+	}
 	switch cfg.Providers.ExchangeProvider {
 	case "internal":
-		reg.SetExchange(exchange.NewInternal())
+		reg.SetExchange(exchange.NewInternal(exchange.InternalConfig{Store: rateStore}))
 	default:
 		log.Printf("Using default exchange provider: internal")
-		reg.SetExchange(exchange.NewInternal())
+		reg.SetExchange(exchange.NewInternal(exchange.InternalConfig{Store: rateStore}))
 	}
 
 	// --- Payment ---

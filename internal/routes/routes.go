@@ -205,6 +205,7 @@ func SetupRoutes(router *gin.Engine, cfg *config.Config, svc *services.Container
 			// Exchange rates
 			admin.GET("/exchange-rates", h.GetExchangeRates)
 			admin.PUT("/exchange-rates", h.UpsertExchangeRate)
+			admin.POST("/exchange-rates/seed", h.SeedExchangeRates)
 
 			// Access requests
 			admin.GET("/access-requests", h.GetAccessRequests)

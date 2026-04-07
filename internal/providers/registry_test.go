@@ -51,7 +51,7 @@ func TestRegistry_SetAndGet(t *testing.T) {
 	reg.SetKYC(kyc.NewSumSub(kyc.SumSubConfig{}))
 	reg.SetMFA(mfa.NewTwilio(mfa.TwilioConfig{}))
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
-	reg.SetExchange(exchange.NewInternal())
+	reg.SetExchange(exchange.NewInternal(exchange.InternalConfig{}))
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
 	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 
@@ -85,7 +85,7 @@ func fullyConfiguredRegistry() *providers.Registry {
 	reg.SetKYC(kyc.NewSumSub(kyc.SumSubConfig{}))
 	reg.SetMFA(mfa.NewTwilio(mfa.TwilioConfig{}))
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
-	reg.SetExchange(exchange.NewInternal())
+	reg.SetExchange(exchange.NewInternal(exchange.InternalConfig{}))
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
 	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 	return reg

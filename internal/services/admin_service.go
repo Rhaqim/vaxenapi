@@ -1,7 +1,13 @@
 package services
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
 
 	"vaxen/api/internal/models"
 
@@ -113,6 +119,108 @@ func (s *AdminService) UpsertExchangeRate(from, to string, rate, spread decimal.
 		"spread":     spread,
 		"updated_by": updatedBy,
 	}).Error
+}
+
+// SeedExchangeRatesInput represents a request to bulk-seed exchange rates.
+type SeedExchangeRatesInput struct {
+	Base          string   `json:"base" binding:"required"`          // e.g. "USD"
+	Targets       []string `json:"targets" binding:"required,min=1"` // e.g. ["EUR", "GBP"]
+	DefaultSpread string   `json:"defaultSpread"`                    // e.g. "0.005", defaults to 0.5%
+}
+
+// SeedExchangeRateResult is returned for each pair processed.
+type SeedExchangeRateResult struct {
+	From   string `json:"from"`
+	To     string `json:"to"`
+	Rate   string `json:"rate"`
+	Status string `json:"status"` // "created", "updated", "failed"
+	Error  string `json:"error,omitempty"`
+}
+
+// SeedExchangeRates fetches live rates from a public API and upserts them.
+func (s *AdminService) SeedExchangeRates(input SeedExchangeRatesInput, updatedBy string) ([]SeedExchangeRateResult, error) {
+	base := strings.ToUpper(input.Base)
+	targets := make([]string, len(input.Targets))
+	for i, t := range input.Targets {
+		targets[i] = strings.ToUpper(t)
+	}
+
+	spread := decimal.NewFromFloat(0.005)
+	if input.DefaultSpread != "" {
+		if s, err := decimal.NewFromString(input.DefaultSpread); err == nil {
+			spread = s
+		}
+	}
+
+	rates, err := fetchPublicRates(base, targets)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch rates: %w", err)
+	}
+
+	results := make([]SeedExchangeRateResult, 0, len(targets))
+	for _, target := range targets {
+		rate, ok := rates[target]
+		if !ok {
+			results = append(results, SeedExchangeRateResult{
+				From: base, To: target, Status: "failed",
+				Error: "rate not found in API response",
+			})
+			continue
+		}
+
+		err := s.UpsertExchangeRate(base, target, rate, spread, updatedBy)
+		status := "updated"
+		errMsg := ""
+		if err != nil {
+			status = "failed"
+			errMsg = err.Error()
+		} else {
+			// Check if it was a create or update
+			var count int64
+			s.db.Model(&models.ExchangeRate{}).Where("from_currency = ? AND to_currency = ?", base, target).Count(&count)
+			if count == 1 {
+				status = "created"
+			}
+		}
+		results = append(results, SeedExchangeRateResult{
+			From: base, To: target, Rate: rate.StringFixed(6), Status: status, Error: errMsg,
+		})
+	}
+
+	return results, nil
+}
+
+// fetchPublicRates fetches exchange rates from the Frankfurter API (ECB data, no key required).
+func fetchPublicRates(base string, targets []string) (map[string]decimal.Decimal, error) {
+	url := fmt.Sprintf("https://api.frankfurter.app/latest?from=%s&to=%s",
+		base, strings.Join(targets, ","))
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("HTTP request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	var result struct {
+		Base  string             `json:"base"`
+		Rates map[string]float64 `json:"rates"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	rates := make(map[string]decimal.Decimal, len(result.Rates))
+	for currency, rate := range result.Rates {
+		rates[currency] = decimal.NewFromFloat(rate)
+	}
+
+	return rates, nil
 }
 
 // --- User & Organization Management ---

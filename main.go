@@ -60,7 +60,7 @@ func main() {
 	}
 
 	// Bootstrap providers from config (swap by changing env vars)
-	reg := providers.Bootstrap(cfg)
+	reg := providers.Bootstrap(cfg, database.DB)
 	log.Printf("Providers: KYC=%s MFA=%s Wallet=%s Exchange=%s Payment=%s Email=%s",
 		reg.KYC().Name(), reg.MFA().Name(), reg.Wallet().Name(),
 		reg.Exchange().Name(), reg.Payment().Name(), reg.Email().Name())

@@ -44,14 +44,18 @@ type testEnv struct {
 func setupTestEnv(t *testing.T) *testEnv {
 	t.Helper()
 	db := testutil.SetupTestDB(t)
-	db.AutoMigrate(&models.Beneficiary{}, &models.Payout{})
+	db.AutoMigrate(&models.Beneficiary{}, &models.Payout{}, &models.ExchangeRate{})
+
+	// Seed exchange rates for tests
+	db.Create(&models.ExchangeRate{FromCurrency: "USD", ToCurrency: "EUR", Rate: decimal.NewFromFloat(0.85), Spread: decimal.NewFromFloat(0.005), IsActive: true})
+	db.Create(&models.ExchangeRate{FromCurrency: "USD", ToCurrency: "GBP", Rate: decimal.NewFromFloat(0.73), Spread: decimal.NewFromFloat(0.004), IsActive: true})
 
 	cfg := testutil.TestConfig()
 	reg := providers.NewRegistry()
 	reg.SetKYC(kyc.NewSumSub(kyc.SumSubConfig{}))
 	reg.SetMFA(mfa.NewTwilio(mfa.TwilioConfig{}))
 	reg.SetWallet(wallet.NewAWSKMS(wallet.AWSKMSConfig{}))
-	reg.SetExchange(exchange.NewInternal())
+	reg.SetExchange(exchange.NewInternal(exchange.InternalConfig{Store: exchange.NewGormRateStore(db)}))
 	reg.SetPayment(payment.NewCircle(payment.CircleConfig{}))
 	reg.SetEmail(email.NewSendGrid(email.SendGridConfig{}))
 

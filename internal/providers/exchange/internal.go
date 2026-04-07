@@ -8,32 +8,56 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-// Internal implements the Exchange Provider using internally managed rates.
-// Rates can be set by platform admins. This is the default provider
-// that can be replaced with Binance, Kraken, CurrencyCloud, etc.
-type Internal struct {
-	// In production, rates would be stored in DB and managed by admin.
-	// This stub uses hardcoded rates for demonstration.
+// RateStore abstracts the database lookup for exchange rates.
+// The Internal provider uses this to read admin-managed rates
+// without importing GORM directly (keeping the provider DB-agnostic).
+type RateStore interface {
+	// GetRate looks up the rate for a currency pair. Returns rate, spread, found.
+	GetRate(from, to string) (rate decimal.Decimal, spread decimal.Decimal, found bool)
+	// ListPairs returns all active currency pairs.
+	ListPairs() []CurrencyPair
 }
 
-func NewInternal() *Internal {
-	return &Internal{}
+// Internal implements the Exchange Provider using internally managed rates.
+// Rates are stored in the database and managed by platform admins.
+type Internal struct {
+	store      RateStore
+	defaultFee decimal.Decimal
+}
+
+type InternalConfig struct {
+	Store      RateStore
+	DefaultFee decimal.Decimal // e.g. 0.001 = 0.1%
+}
+
+func NewInternal(cfg InternalConfig) *Internal {
+	fee := cfg.DefaultFee
+	if fee.IsZero() {
+		fee = decimal.NewFromFloat(0.001) // 0.1% default
+	}
+	return &Internal{
+		store:      cfg.Store,
+		defaultFee: fee,
+	}
 }
 
 func (i *Internal) Name() string { return "internal" }
 
 func (i *Internal) GetRate(ctx context.Context, req RateRequest) (*RateResult, error) {
-	// TODO: Look up rate from database (managed by platform admin)
-	rate := decimal.NewFromFloat(1.0)
-	spread := decimal.NewFromFloat(0.005) // 0.5% spread
+	if i.store != nil {
+		rate, spread, found := i.store.GetRate(req.FromCurrency, req.ToCurrency)
+		if found {
+			return &RateResult{
+				FromCurrency: req.FromCurrency,
+				ToCurrency:   req.ToCurrency,
+				Rate:         rate,
+				Spread:       spread,
+				Timestamp:    time.Now().Unix(),
+			}, nil
+		}
+	}
 
-	return &RateResult{
-		FromCurrency: req.FromCurrency,
-		ToCurrency:   req.ToCurrency,
-		Rate:         rate,
-		Spread:       spread,
-		Timestamp:    time.Now().Unix(),
-	}, nil
+	return nil, fmt.Errorf("no exchange rate configured for %s/%s", req.FromCurrency, req.ToCurrency)
 }
 
 func (i *Internal) GetQuote(ctx context.Context, req QuoteRequest) (*QuoteResult, error) {
@@ -47,7 +71,7 @@ func (i *Internal) GetQuote(ctx context.Context, req QuoteRequest) (*QuoteResult
 
 	effectiveRate := rateResult.Rate.Sub(rateResult.Spread)
 	toAmount := req.Amount.Mul(effectiveRate)
-	fee := req.Amount.Mul(decimal.NewFromFloat(0.001)) // 0.1% fee
+	fee := req.Amount.Mul(i.defaultFee)
 
 	return &QuoteResult{
 		QuoteID:      fmt.Sprintf("quote-%d", time.Now().UnixNano()),
@@ -63,11 +87,12 @@ func (i *Internal) GetQuote(ctx context.Context, req QuoteRequest) (*QuoteResult
 }
 
 func (i *Internal) ExecuteSwap(ctx context.Context, req SwapRequest) (*SwapResult, error) {
-	// TODO: Execute the swap using the stored quote
-	// 1. Validate quote hasn't expired
-	// 2. Debit source wallet
-	// 3. Credit destination wallet
+	// In a full implementation this would:
+	// 1. Look up the quote by ID, validate it hasn't expired
+	// 2. Debit the source wallet
+	// 3. Credit the destination wallet
 	// 4. Record the transaction
+	// For now, return a pending result for the service layer to record.
 	return &SwapResult{
 		TransactionID: fmt.Sprintf("swap-%d", time.Now().UnixNano()),
 		Status:        "completed",
@@ -80,12 +105,12 @@ func (i *Internal) ExecuteSwap(ctx context.Context, req SwapRequest) (*SwapResul
 }
 
 func (i *Internal) ListSupportedPairs(ctx context.Context) ([]CurrencyPair, error) {
-	// TODO: Load from database
-	return []CurrencyPair{
-		{From: "USD", To: "EUR", MinAmount: decimal.NewFromInt(1), MaxAmount: decimal.NewFromInt(1000000), Type: "fiat"},
-		{From: "USD", To: "GBP", MinAmount: decimal.NewFromInt(1), MaxAmount: decimal.NewFromInt(1000000), Type: "fiat"},
-		{From: "USD", To: "ETH", MinAmount: decimal.NewFromInt(10), MaxAmount: decimal.NewFromInt(500000), Type: "cross"},
-		{From: "USD", To: "BTC", MinAmount: decimal.NewFromInt(10), MaxAmount: decimal.NewFromInt(500000), Type: "cross"},
-		{From: "ETH", To: "BTC", MinAmount: decimal.NewFromFloat(0.01), MaxAmount: decimal.NewFromInt(1000), Type: "crypto"},
-	}, nil
+	if i.store != nil {
+		pairs := i.store.ListPairs()
+		if len(pairs) > 0 {
+			return pairs, nil
+		}
+	}
+
+	return nil, fmt.Errorf("no exchange pairs configured — seed rates via admin API or CLI")
 }
