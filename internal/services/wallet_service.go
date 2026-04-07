@@ -52,6 +52,20 @@ func (s *WalletService) CreateWeb3Wallet(ctx context.Context, orgID string, netw
 	return &w, nil
 }
 
+// CreateFiatWallet creates a single fiat wallet for an organization.
+func (s *WalletService) CreateFiatWallet(orgID string, currency string) (*models.Wallet, error) {
+	w := models.Wallet{
+		OrganizationID: orgID,
+		Type:           models.WalletTypeFiat,
+		Currency:       currency,
+		IsActive:       true,
+	}
+	if err := s.db.Create(&w).Error; err != nil {
+		return nil, err
+	}
+	return &w, nil
+}
+
 // CreateDefaultWallets creates the standard set of wallets for a new org (fiat + crypto).
 func (s *WalletService) CreateDefaultWallets(ctx context.Context, orgID string) error {
 	fiatCurrencies := []string{"USD", "EUR", "GBP"}

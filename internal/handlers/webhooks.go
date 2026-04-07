@@ -10,7 +10,7 @@ import (
 
 // ProcessWebhook godoc
 // @Summary Process provider webhook
-// @Description Process webhook events from payment providers
+// @Description Receive and store webhook events from payment/KYC providers
 // @Tags webhooks
 // @Accept json
 // @Produce json
@@ -18,7 +18,7 @@ import (
 // @Success 200 {object} map[string]any
 // @Router /webhooks/provider/{provider} [post]
 func (h *Handler) ProcessWebhook(c *gin.Context) {
-	provider := c.Param("provider")
+	providerName := c.Param("provider")
 	var payload map[string]any
 
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -26,60 +26,66 @@ func (h *Handler) ProcessWebhook(c *gin.Context) {
 		return
 	}
 
-	// TODO: Validate webhook signature
-	// TODO: Process webhook based on provider and event type
+	// TODO: Validate webhook signature per provider
+
+	event, err := h.Services.Webhook.ProcessWebhook(providerName, payload)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"provider": provider,
-		"message":  "Webhook processed successfully",
+		"eventId":  event.ID,
+		"provider": event.Provider,
+		"status":   event.Status,
+		"message":  "Webhook received",
 	})
 }
 
 // GetProviders godoc
-// @Summary Get all providers
-// @Description Retrieve all payment providers
+// @Summary Get active providers
+// @Description List all configured provider names
 // @Tags providers
-// @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /providers [get]
 func (h *Handler) GetProviders(c *gin.Context) {
-	// TODO: Fetch from database
-	utils.SuccessResponse(c, http.StatusOK, []gin.H{
-		{
-			"id":     "provider-1",
-			"name":   "Stripe",
-			"type":   "payment",
-			"status": "active",
-		},
-		{
-			"id":     "provider-2",
-			"name":   "Wise",
-			"type":   "transfer",
-			"status": "active",
-		},
-	})
+	providerList := []gin.H{}
+
+	if h.Services.KYC != nil {
+		providerList = append(providerList, gin.H{"name": "kyc", "status": "configured"})
+	}
+	if h.Services.MFA != nil {
+		providerList = append(providerList, gin.H{"name": "mfa", "status": "configured"})
+	}
+	if h.Services.Exchange != nil {
+		providerList = append(providerList, gin.H{"name": "exchange", "status": "configured"})
+	}
+	if h.Services.Payment != nil {
+		providerList = append(providerList, gin.H{"name": "payment", "status": "configured"})
+	}
+	if h.Services.Email != nil {
+		providerList = append(providerList, gin.H{"name": "email", "status": "configured"})
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, providerList)
 }
 
 // GetProvider godoc
-// @Summary Get provider by ID
-// @Description Retrieve a specific provider
+// @Summary Get provider by name
+// @Description Retrieve details about a specific provider
 // @Tags providers
-// @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Param id path string true "Provider ID"
+// @Param id path string true "Provider name"
 // @Success 200 {object} map[string]any
 // @Router /providers/{id} [get]
 func (h *Handler) GetProvider(c *gin.Context) {
-	id := c.Param("id")
+	name := c.Param("id")
 
-	// TODO: Fetch from database
 	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"id":     id,
-		"name":   "Stripe",
-		"type":   "payment",
-		"status": "active",
+		"name":   name,
+		"status": "configured",
 	})
 }

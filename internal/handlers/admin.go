@@ -12,29 +12,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// GetAuditLogs godoc
-// @Summary Get audit logs
-// @Description Retrieve audit logs for the organization
-// @Tags audit
-// @Accept json
-// @Produce json
-// @Security BearerAuth
-// @Success 200 {object} map[string]any
-// @Router /audit/logs [get]
-func (h *Handler) GetAuditLogs(c *gin.Context) {
-	organizationID := c.GetString("organizationId")
-
-	utils.SuccessResponse(c, http.StatusOK, []gin.H{
-		{
-			"id":             "log-1",
-			"organizationId": organizationID,
-			"action":         "user.login",
-			"timestamp":      "2026-02-20T10:00:00Z",
-			"userId":         "user-123",
-		},
-	})
-}
-
 // --- Platform Admin ---
 
 // GetAllUsers godoc

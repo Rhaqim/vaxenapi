@@ -3,40 +3,36 @@ package handlers
 import (
 	"net/http"
 
+	"vaxen/api/internal/services"
 	"vaxen/api/internal/utils"
 
 	"github.com/gin-gonic/gin"
 )
 
 // GetOrganizations godoc
-// @Summary Get all organizations for the authenticated user
-// @Description Retrieve all organizations accessible by the current user
+// @Summary Get the authenticated user's organization
+// @Description Retrieve the organization for the current user
 // @Tags organizations
-// @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Success 200 {object} map[string]any
 // @Router /organizations [get]
 func (h *Handler) GetOrganizations(c *gin.Context) {
-	organizationID := c.GetString("organizationId")
+	orgID := c.GetString("organizationId")
 
-	// TODO: Fetch from database
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"organizations": []gin.H{
-			{
-				"id":     organizationID,
-				"name":   "Sample Organization",
-				"status": "active",
-			},
-		},
-	})
+	org, err := h.Services.Organization.Get(orgID)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, org)
 }
 
 // GetOrganization godoc
 // @Summary Get organization by ID
-// @Description Retrieve a specific organization
+// @Description Retrieve a specific organization (must be your own)
 // @Tags organizations
-// @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Organization ID"
@@ -45,60 +41,62 @@ func (h *Handler) GetOrganizations(c *gin.Context) {
 func (h *Handler) GetOrganization(c *gin.Context) {
 	id := c.Param("id")
 
-	// TODO: Fetch from database
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"id":     id,
-		"name":   "Sample Organization",
-		"status": "active",
-	})
+	if id != c.GetString("organizationId") {
+		utils.ErrorResponse(c, http.StatusForbidden, "access denied")
+		return
+	}
+
+	org, err := h.Services.Organization.Get(id)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusNotFound, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, org)
 }
 
 // CreateOrganization godoc
 // @Summary Create a new organization
-// @Description Create a new organization
+// @Description Organizations are created during registration
 // @Tags organizations
-// @Accept json
 // @Produce json
 // @Security BearerAuth
-// @Success 201 {object} map[string]any
+// @Success 400 {object} map[string]any
 // @Router /organizations [post]
 func (h *Handler) CreateOrganization(c *gin.Context) {
-	var req map[string]any
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// TODO: Create in database
-	utils.SuccessResponse(c, http.StatusCreated, gin.H{
-		"id":      "new-org-id",
-		"message": "Organization created",
-	})
+	utils.ErrorResponse(c, http.StatusBadRequest, "organizations are created during registration")
 }
 
 // UpdateOrganization godoc
 // @Summary Update organization
-// @Description Update an existing organization
+// @Description Update organization details
 // @Tags organizations
 // @Accept json
 // @Produce json
 // @Security BearerAuth
 // @Param id path string true "Organization ID"
+// @Param request body services.UpdateOrganizationInput true "Fields to update"
 // @Success 200 {object} map[string]any
 // @Router /organizations/{id} [put]
 func (h *Handler) UpdateOrganization(c *gin.Context) {
 	id := c.Param("id")
-	var req map[string]any
 
+	if id != c.GetString("organizationId") {
+		utils.ErrorResponse(c, http.StatusForbidden, "access denied")
+		return
+	}
+
+	var req services.UpdateOrganizationInput
 	if err := c.ShouldBindJSON(&req); err != nil {
 		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	// TODO: Update in database
-	utils.SuccessResponse(c, http.StatusOK, gin.H{
-		"id":      id,
-		"message": "Organization updated",
-	})
+	org, err := h.Services.Organization.Update(id, req)
+	if err != nil {
+		utils.ErrorResponse(c, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	utils.SuccessResponse(c, http.StatusOK, org)
 }
